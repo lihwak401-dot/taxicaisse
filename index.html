@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fbbf24" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TaxiCaisse" />
+  <title>TaxiCaisse</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      overscroll-behavior: none;
+      padding-top: env(safe-area-inset-top);
+    }
+    #app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 28px; }
+    .app-name { font-size: 18px; font-weight: 800; color: #fbbf24; }
+    .app-sub { font-size: 11px; color: #64748b; text-transform: capitalize; }
+    .total-badge { background: #fbbf24; color: #0f172a; font-weight: 800; font-size: 16px; padding: 7px 12px; border-radius: 12px; }
+
+    /* FLASH */
+    .flash { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #fff; text-align: center; flex-shrink: 0; }
+
+    /* MAIN */
+    main { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
+
+    /* NAV BAS */
+    nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      display: flex; background: #0f172a; border-top: 1px solid #1e293b;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 10px 4px; background: transparent;
+      border: none; color: #475569; cursor: pointer; gap: 3px;
+    }
+    .nav-btn.active { color: #fbbf24; }
+    .nav-icon { font-size: 20px; }
+    .nav-label { font-size: 10px; font-weight: 600; }
+
+    /* SECTIONS */
+    .section-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .date-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 6px 10px; font-size: 13px; }
+
+    /* STAT CARDS */
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: #1e293b; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+    .stat-icon { font-size: 20px; }
+    .stat-value { font-size: 18px; font-weight: 800; }
+    .stat-label { font-size: 10px; color: #64748b; font-weight: 600; }
+
+    /* COURSE CARD */
+    .empty { color: #475569; text-align: center; padding: 40px 20px; font-size: 14px; line-height: 1.8; }
+    .course-card { background: #1e293b; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .course-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .course-left { flex: 1; }
+    .course-heure { font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
+    .course-route { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+    .course-note { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .course-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .course-montant { font-size: 17px; font-weight: 800; color: #fbbf24; }
+    .course-paiement { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+    .delete-btn { background: transparent; border: none; color: #475569; cursor: pointer; font-size: 16px; padding: 2px; }
+    .confirm-row { display: flex; justify-content: space-between; align-items: center; background: rgba(127,29,29,0.2); border: 1px solid #991b1b; border-radius: 8px; padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+    .confirm-oui { background: #dc2626; color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .confirm-non { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    /* FORM */
+    .form-card { background: #1e293b; border-radius: 16px; padding: 20px; }
+    .form-title { font-size: 18px; font-weight: 800; color: #fbbf24; margin-bottom: 20px; }
+    .label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    input[type=text], input[type=time], input[type=number], input[type=date] {
+      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      color: #e2e8f0; padding: 12px; font-size: 16px; margin-bottom: 14px;
+      -webkit-appearance: none; outline: none;
+    }
+    .paiement-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .paiement-btn { flex: 1; padding: 12px 8px; border: none; border-radius: 10px; font-size: 13px; cursor: pointer; text-transform: capitalize; }
+    .submit-btn { width: 100%; background: #fbbf24; color: #0f172a; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
+    .cancel-btn { width: 100%; background: transparent; color: #64748b; border: 1px solid #334155; border-radius: 12px; padding: 14px; font-size: 14px; cursor: pointer; }
+
+    /* RECAP */
+    .recap-box { background: #0f172a; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .recap-item { display: flex; justify-content: space-between; font-size: 14px; color: #94a3b8; }
+
+    /* INSTALL BANNER */
+    .install-banner { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #93c5fd; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; }
+    .install-banner-close { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-left">
+      <span class="logo">🚕</span>
+      <div>
+        <div class="app-name">TaxiCaisse</div>
+        <div class="app-sub" id="date-header"></div>
+      </div>
+    </div>
+    <div class="total-badge" id="total-header">0,00 €</div>
+  </header>
+
+  <div class="flash" id="flash" style="display:none"></div>
+
+  <main id="main"></main>
+
+  <nav>
+    <button class="nav-btn active" onclick="setVue('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Tableau</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('ajouter')" id="nav-ajouter">
+      <span class="nav-icon">➕</span>
+      <span class="nav-label">Ajouter</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('historique')" id="nav-historique">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Historique</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+const STORAGE_KEY = "taxi_courses";
+let courses = [];
+let vue = "dashboard";
+let dateFiltre = today();
+let confirmId = null;
+
+try { courses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch {}
+
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function formatEuro(n) {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0);
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+}
+
+function paiementColor(p) {
+  return p === "espèces" ? "#4ade80" : p === "carte" ? "#60a5fa" : "#facc15";
+}
+
+function totaux(liste) {
+  return liste.reduce((acc, c) => {
+    const m = parseFloat(c.montant) || 0;
+    acc.total += m;
+    if (c.paiement === "espèces") acc.especes += m;
+    else if (c.paiement === "carte") acc.carte += m;
+    else acc.autre += m;
+    return acc;
+  }, { total: 0, especes: 0, carte: 0, autre: 0 });
+}
+
+function flash(msg, type) {
+  const el = document.getElementById("flash");
+  el.textContent = msg;
+  el.style.display = "block";
+  el.style.background = type === "ok" ? "#166534" : "#7f1d1d";
+  setTimeout(() => { el.style.display = "none"; }, 2000);
+}
+
+function setVue(v) {
+  vue = v;
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("nav-" + v).classList.add("active");
+  render();
+}
+
+function supprimerCourse(id) {
+  courses = courses.filter(c => c.id !== id);
+  save();
+  confirmId = null;
+  render();
+}
+
+function toggleConfirm(id) {
+  confirmId = confirmId === id ? null : id;
+  render();
+}
+
+function ajouterCourse() {
+  const heure = document.getElementById("f-heure").value;
+  const montant = document.getElementById("f-montant").value;
+  if (!heure || !montant) { flash("Heure et montant obligatoires.", "err"); return; }
+  const paiement = document.querySelector(".paiement-btn.selected")?.dataset.val || "espèces";
+  const course = {
+    id: Date.now(),
+    date: today(),
+    heure,
+    depart: document.getElementById("f-depart").value,
+    arrivee: document.getElementById("f-arrivee").value,
+    montant,
+    paiement,
+    note: document.getElementById("f-note").value,
+  };
+  courses.unshift(course);
+  save();
+  flash("Course ajoutée !", "ok");
+  setVue("dashboard");
+}
+
+function selectPaiement(btn) {
+  document.querySelectorAll(".paiement-btn").forEach(b => {
+    b.classList.remove("selected");
+    b.style.background = "#0f172a";
+    b.style.color = "#94a3b8";
+    b.style.fontWeight = "400";
+  });
+  btn.classList.add("selected");
+  btn.style.background = paiementColor(btn.dataset.val);
+  btn.style.color = "#0f172a";
+  btn.style.fontWeight = "700";
+}
+
+function renderCourseCard(c) {
+  const route = c.depart || c.arrivee
+    ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
+    : "Trajet non renseigné";
+  const confirming = confirmId === c.id;
+  return `
+    <div class="course-card">
+      <div class="course-inner">
+        <div class="course-left">
+          <div class="course-heure">${c.heure}</div>
+          <div class="course-route">${route}</div>
+          ${c.note ? `<div class="course-note">${c.note}</div>` : ""}
+        </div>
+        <div class="course-right">
+          <div class="course-montant">${parseFloat(c.montant).toFixed(2)} €</div>
+          <div class="course-paiement" style="background:${paiementColor(c.paiement)}22;color:${paiementColor(c.paiement)}">${c.paiement}</div>
+          <button class="delete-btn" onclick="toggleConfirm(${c.id})">🗑️</button>
+        </div>
+      </div>
+      ${confirming ? `
+        <div class="confirm-row">
+          <span style="font-size:13px;color:#f87171">Supprimer cette course ?</span>
+          <div style="display:flex;gap:8px">
+            <button class="confirm-oui" onclick="supprimerCourse(${c.id})">Oui</button>
+            <button class="confirm-non" onclick="toggleConfirm(${c.id})">Annuler</button>
+          </div>
+        </div>` : ""}
+    </div>`;
+}
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function isStandalone() {
+  return window.navigator.standalone === true;
+}
+
+function render() {
+  const coursesJour = courses.filter(c => c.date === dateFiltre);
+  const t = totaux(coursesJour);
+
+  document.getElementById("total-header").textContent = formatEuro(t.total);
+  document.getElementById("date-header").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+  const installBanner = isIOS() && !isStandalone() && vue === "dashboard"
+    ? `<div class="install-banner">
+        <span>📲 <strong>Installer l'app :</strong> appuie sur le bouton Partager (↑) en bas de Safari, puis "Sur l'écran d'accueil".</span>
+        <button class="install-banner-close" onclick="this.parentElement.remove()">✕</button>
+      </div>`
+    : "";
+
+  let html = "";
+
+  if (vue === "dashboard") {
+    html = `
+      ${installBanner}
+      <div class="date-row">
+        <span class="section-title">Journée du</span>
+        <input type="date" class="date-input" value="${dateFiltre}" onchange="dateFiltre=this.value;render()">
+      </div>
+      <div class="cards-grid">
+        <div class="stat-card" style="border-top:3px solid #fbbf24"><div class="stat-icon">💰</div><div class="stat-value" style="color:#fbbf24">${formatEuro(t.total)}</div><div class="stat-label">Total du jour</div></div>
+        <div class="stat-card" style="border-top:3px solid #60a5fa"><div class="stat-icon">🚗</div><div class="stat-value" style="color:#60a5fa">${coursesJour.length}</div><div class="stat-label">Courses</div></div>
+        <div class="stat-card" style="border-top:3px solid #4ade80"><div class="stat-icon">💵</div><div class="stat-value" style="color:#4ade80">${formatEuro(t.especes)}</div><div class="stat-label">Espèces</div></div>
+        <div class="stat-card" style="border-top:3px solid #a78bfa"><div class="stat-icon">💳</div><div class="stat-value" style="color:#a78bfa">${formatEuro(t.carte)}</div><div class="stat-label">Carte</div></div>
+      </div>
+      <div class="section-title" style="margin-bottom:12px">Courses aujourd'hui</div>
+      ${coursesJour.length === 0
+        ? `<div class="empty">Aucune course pour cette journée.<br>Appuie sur ➕ pour en ajouter une.</div>`
+        : coursesJour.map(renderCourseCard).join("")}
+    `;
+  }
+
+  else if (vue === "ajouter") {
+    html = `
+      <div class="form-card">
+        <div class="form-title">Nouvelle course</div>
+        <div class="label">Heure *</div>
+        <input type="time" id="f-heure">
+        <div class="label">Départ</div>
+        <input type="text" id="f-depart" placeholder="ex: Gare du Nord">
+        <div class="label">Arrivée</div>
+        <input type="text" id="f-arrivee" placeholder="ex: Aéroport CDG">
+        <div class="label">Montant (€) *</div>
+        <input type="number" id="f-montant" placeholder="0.00" step="0.10" min="0" inputmode="decimal">
+        <div class="label">Paiement</div>
+        <div class="paiement-row">
+          <button class="paiement-btn selected" data-val="espèces" onclick="selectPaiement(this)" style="background:#4ade80;color:#0f172a;font-weight:700">espèces</button>
+          <button class="paiement-btn" data-val="carte" onclick="selectPaiement(this)" style="background:#0f172a;color:#94a3b8">carte</button>
+          <button class="paiement-btn" data-val="autre" onclick="selectPaiement(this)" style="background:#0f172a;color:#94a3b8">autre</button>
+        </div>
+        <div class="label">Note</div>
+        <input type="text" id="f-note" placeholder="Optionnel...">
+        <button class="submit-btn" onclick="ajouterCourse()">Enregistrer la course</button>
+        <button class="cancel-btn" onclick="setVue('dashboard')">Annuler</button>
+      </div>
+    `;
+  }
+
+  else if (vue === "historique") {
+    html = `
+      <div class="date-row">
+        <span class="section-title">Filtrer par date</span>
+        <input type="date" class="date-input" value="${dateFiltre}" onchange="dateFiltre=this.value;render()">
+      </div>
+      <div class="recap-box">
+        <div class="recap-item"><span>Total</span><strong>${formatEuro(t.total)}</strong></div>
+        <div class="recap-item"><span>Espèces</span><strong style="color:#4ade80">${formatEuro(t.especes)}</strong></div>
+        <div class="recap-item"><span>Carte</span><strong style="color:#60a5fa">${formatEuro(t.carte)}</strong></div>
+        <div class="recap-item"><span>Autre</span><strong style="color:#facc15">${formatEuro(t.autre)}</strong></div>
+      </div>
+      ${coursesJour.length === 0
+        ? `<div class="empty">Aucune course pour cette date.</div>`
+        : coursesJour.map(renderCourseCard).join("")}
+    `;
+  }
+
+  document.getElementById("main").innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
