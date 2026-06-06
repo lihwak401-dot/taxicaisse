@@ -103,6 +103,15 @@
     .recap-box { background: #0f172a; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
     .recap-item { display: flex; justify-content: space-between; font-size: 14px; color: #94a3b8; }
 
+    .edit-btn { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; padding: 2px; }
+    .edit-row { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .edit-row input { margin-bottom: 0 !important; }
+    .edit-paiement-row { display: flex; gap: 6px; }
+    .edit-paiement-btn { flex: 1; padding: 8px 4px; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; text-transform: capitalize; }
+    .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .edit-save { flex: 1; background: #fbbf24; color: #0f172a; border: none; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 800; cursor: pointer; }
+    .edit-cancel { flex: 1; background: transparent; color: #64748b; border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+
     /* INSTALL BANNER */
     .install-banner { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #93c5fd; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; }
     .install-banner-close { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; flex-shrink: 0; }
@@ -147,11 +156,13 @@ let courses = [];
 let vue = "dashboard";
 let dateFiltre = today();
 let confirmId = null;
+let editId = null;
 
 try { courses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch {}
 
 function today() {
-  return new Date().toISOString().split("T")[0];
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
 }
 
 function formatEuro(n) {
@@ -202,6 +213,45 @@ function supprimerCourse(id) {
 function toggleConfirm(id) {
   confirmId = confirmId === id ? null : id;
   render();
+}
+
+function toggleEdit(id) {
+  editId = editId === id ? null : id;
+  confirmId = null;
+  render();
+}
+
+function sauvegarderModif(id) {
+  const heure = document.getElementById("e-heure-" + id).value;
+  const montant = document.getElementById("e-montant-" + id).value;
+  if (!heure || !montant) { flash("Heure et montant obligatoires.", "err"); return; }
+  const paiement = document.querySelector(".edit-paiement-btn.eselected[data-id='" + id + "']")?.dataset.val || "espèces";
+  courses = courses.map(c => c.id === id ? {
+    ...c,
+    heure,
+    montant,
+    depart: document.getElementById("e-depart-" + id).value,
+    arrivee: document.getElementById("e-arrivee-" + id).value,
+    note: document.getElementById("e-note-" + id).value,
+    paiement,
+  } : c);
+  save();
+  editId = null;
+  flash("Course modifiée !", "ok");
+  render();
+}
+
+function selectEditPaiement(btn, id) {
+  document.querySelectorAll(".edit-paiement-btn[data-id='" + id + "']").forEach(b => {
+    b.classList.remove("eselected");
+    b.style.background = "#1e293b";
+    b.style.color = "#94a3b8";
+    b.style.fontWeight = "400";
+  });
+  btn.classList.add("eselected");
+  btn.style.background = paiementColor(btn.dataset.val);
+  btn.style.color = "#0f172a";
+  btn.style.fontWeight = "700";
 }
 
 function ajouterCourse() {
