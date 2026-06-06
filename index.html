@@ -293,6 +293,8 @@ function renderCourseCard(c) {
     ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
     : "Trajet non renseigné";
   const confirming = confirmId === c.id;
+  const editing = editId === c.id;
+  const pc = paiementColor(c.paiement);
   return `
     <div class="course-card">
       <div class="course-inner">
@@ -303,10 +305,29 @@ function renderCourseCard(c) {
         </div>
         <div class="course-right">
           <div class="course-montant">${parseFloat(c.montant).toFixed(2)} €</div>
-          <div class="course-paiement" style="background:${paiementColor(c.paiement)}22;color:${paiementColor(c.paiement)}">${c.paiement}</div>
-          <button class="delete-btn" onclick="toggleConfirm(${c.id})">🗑️</button>
+          <div class="course-paiement" style="background:${pc}22;color:${pc}">${c.paiement}</div>
+          <div style="display:flex;gap:6px;margin-top:2px">
+            <button class="edit-btn" onclick="toggleEdit(${c.id})">✏️</button>
+            <button class="delete-btn" onclick="toggleConfirm(${c.id})">🗑️</button>
+          </div>
         </div>
       </div>
+      ${editing ? `
+        <div class="edit-row">
+          <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Modifier la course</div>
+          <input type="time" id="e-heure-${c.id}" value="${c.heure}">
+          <input type="text" id="e-depart-${c.id}" value="${c.depart || ""}" placeholder="Départ">
+          <input type="text" id="e-arrivee-${c.id}" value="${c.arrivee || ""}" placeholder="Arrivée">
+          <input type="number" id="e-montant-${c.id}" value="${c.montant}" step="0.10" min="0" inputmode="decimal" placeholder="Montant">
+          <div class="edit-paiement-row">
+            ${["espèces","carte","autre"].map(p => "<button class='edit-paiement-btn" + (p===c.paiement?" eselected":"") + "' data-val='" + p + "' data-id='" + c.id + "' onclick='selectEditPaiement(this," + c.id + ")' style='background:" + (p===c.paiement?paiementColor(p):"#1e293b") + ";color:" + (p===c.paiement?"#0f172a":"#94a3b8") + ";font-weight:" + (p===c.paiement?"700":"400") + "'>" + p + "</button>").join("")}
+          </div>
+          <input type="text" id="e-note-${c.id}" value="${c.note || ""}" placeholder="Note (optionnel)">
+          <div class="edit-actions">
+            <button class="edit-save" onclick="sauvegarderModif(${c.id})">💾 Sauvegarder</button>
+            <button class="edit-cancel" onclick="toggleEdit(${c.id})">Annuler</button>
+          </div>
+        </div>` : ""}
       ${confirming ? `
         <div class="confirm-row">
           <span style="font-size:13px;color:#f87171">Supprimer cette course ?</span>
