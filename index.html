@@ -166,6 +166,12 @@ try { courses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch {
 
 function today() {
   const now = new Date();
+  // Si entre minuit et 6h, la journée de travail est celle de la veille
+  if (now.getHours() < 6) {
+    const hier = new Date(now);
+    hier.setDate(now.getDate() - 1);
+    return `${hier.getFullYear()}-${String(hier.getMonth()+1).padStart(2,"0")}-${String(hier.getDate()).padStart(2,"0")}`;
+  }
   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
 }
 
@@ -297,6 +303,7 @@ function selectPaiement(btn) {
 function isNuit(heure) {
   if (!heure) return false;
   const h = parseInt(heure.split(":")[0]);
+  // Nuit = 18h à 23h59 ou 0h à 5h59
   return h >= 18 || h < 6;
 }
 
