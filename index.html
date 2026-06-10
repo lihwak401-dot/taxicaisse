@@ -194,10 +194,9 @@ function totaux(liste) {
     if (c.paiement === "espèces") acc.especes += m;
     else if (c.paiement === "carte") acc.carte += m;
     else acc.autre += m;
-    if (isNuit(c.heure)) acc.nuit += m;
-    else acc.jour += m;
+
     return acc;
-  }, { total: 0, especes: 0, carte: 0, autre: 0, nuit: 0, jour: 0 });
+  }, { total: 0, especes: 0, carte: 0, autre: 0 });
 }
 
 function flash(msg, type) {
@@ -300,13 +299,6 @@ function selectPaiement(btn) {
   btn.style.fontWeight = "700";
 }
 
-function isNuit(heure) {
-  if (!heure) return false;
-  const h = parseInt(heure.split(":")[0]);
-  // Nuit = 18h à 23h59 ou 0h à 5h59
-  return h >= 18 || h < 6;
-}
-
 function renderCourseCard(c) {
   const route = c.depart || c.arrivee
     ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
@@ -314,14 +306,13 @@ function renderCourseCard(c) {
   const confirming = confirmId === c.id;
   const editing = editId === c.id;
   const pc = paiementColor(c.paiement);
-  const nuit = isNuit(c.heure);
   return `
-    <div class="course-card" style="${nuit ? "border-left:3px solid #818cf8;background:#1a1f35;" : ""}">
+    <div class="course-card">
       <div class="course-inner">
         <div class="course-left">
           <div style="display:flex;align-items:center;gap:6px">
             <div class="course-heure">${c.heure}</div>
-            ${nuit ? '<span style="font-size:10px;font-weight:700;background:#312e81;color:#a5b4fc;padding:2px 7px;border-radius:20px;letter-spacing:0.5px">🌙 NUIT</span>' : '<span style="font-size:10px;font-weight:700;background:#1c3322;color:#86efac;padding:2px 7px;border-radius:20px;letter-spacing:0.5px">☀️ JOUR</span>'}
+
           </div>
           <div class="course-route">${route}</div>
           ${c.note ? `<div class="course-note">${c.note}</div>` : ""}
@@ -499,8 +490,7 @@ function render() {
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.semaine.especes)}</span>
             <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.semaine.carte)}</span>
-            <span style="background:#818cf822;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">🌙 ${formatEuro(s.semaine.nuit)}</span>
-            <span style="background:#86efac22;color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">☀️ ${formatEuro(s.semaine.jour)}</span>
+
             <span style="background:#fbbf2422;color:#fbbf24;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.semaine.total)}</span>
           </div>
         </div>
@@ -512,8 +502,7 @@ function render() {
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.mois.especes)}</span>
             <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.mois.carte)}</span>
-            <span style="background:#818cf822;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">🌙 ${formatEuro(s.mois.nuit)}</span>
-            <span style="background:#86efac22;color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">☀️ ${formatEuro(s.mois.jour)}</span>
+
             <span style="background:#a78bfa22;color:#a78bfa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.mois.total)}</span>
           </div>
         </div>
