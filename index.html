@@ -147,6 +147,10 @@
       <span class="nav-icon">📋</span>
       <span class="nav-label">Historique</span>
     </button>
+    <button class="nav-btn" onclick="setVue('stats')" id="nav-stats">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">Stats</span>
+    </button>
   </nav>
 </div>
 
@@ -184,8 +188,10 @@ function totaux(liste) {
     if (c.paiement === "espèces") acc.especes += m;
     else if (c.paiement === "carte") acc.carte += m;
     else acc.autre += m;
+    if (isNuit(c.heure)) acc.nuit += m;
+    else acc.jour += m;
     return acc;
-  }, { total: 0, especes: 0, carte: 0, autre: 0 });
+  }, { total: 0, especes: 0, carte: 0, autre: 0, nuit: 0, jour: 0 });
 }
 
 function flash(msg, type) {
@@ -288,6 +294,12 @@ function selectPaiement(btn) {
   btn.style.fontWeight = "700";
 }
 
+function isNuit(heure) {
+  if (!heure) return false;
+  const h = parseInt(heure.split(":")[0]);
+  return h >= 18 || h < 6;
+}
+
 function renderCourseCard(c) {
   const route = c.depart || c.arrivee
     ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
@@ -295,11 +307,15 @@ function renderCourseCard(c) {
   const confirming = confirmId === c.id;
   const editing = editId === c.id;
   const pc = paiementColor(c.paiement);
+  const nuit = isNuit(c.heure);
   return `
-    <div class="course-card">
+    <div class="course-card" style="${nuit ? "border-left:3px solid #818cf8;background:#1a1f35;" : ""}">
       <div class="course-inner">
         <div class="course-left">
-          <div class="course-heure">${c.heure}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="course-heure">${c.heure}</div>
+            ${nuit ? '<span style="font-size:10px;font-weight:700;background:#312e81;color:#a5b4fc;padding:2px 7px;border-radius:20px;letter-spacing:0.5px">🌙 NUIT</span>' : '<span style="font-size:10px;font-weight:700;background:#1c3322;color:#86efac;padding:2px 7px;border-radius:20px;letter-spacing:0.5px">☀️ JOUR</span>'}
+          </div>
           <div class="course-route">${route}</div>
           ${c.note ? `<div class="course-note">${c.note}</div>` : ""}
         </div>
@@ -344,6 +360,44 @@ function isIOS() {
 }
 function isStandalone() {
   return window.navigator.standalone === true;
+}
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay(); // 0=dim
+  const diffLun = (day === 0 ? -6 : 1 - day);
+  const lun = new Date(now); lun.setDate(now.getDate() + diffLun); lun.setHours(0,0,0,0);
+  const dim = new Date(lun); dim.setDate(lun.getDate() + 6); dim.setHours(23,59,59,999);
+  return { lun, dim };
+}
+
+function dateToStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function statsData() {
+  const now = new Date();
+  const { lun, dim } = getWeekRange();
+
+  // Semaine
+  const lunStr = dateToStr(lun);
+  const dimStr = dateToStr(dim);
+  const semaine = courses.filter(c => c.date >= lunStr && c.date <= dimStr);
+
+  // Mois
+  const moisStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const mois = courses.filter(c => c.date.startsWith(moisStr));
+
+  // Derniers 7 jours glissants (pour le graphe)
+  const jours7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(now.getDate() - i);
+    const ds = dateToStr(d);
+    const total = courses.filter(c => c.date === ds).reduce((a, c) => a + (parseFloat(c.montant)||0), 0);
+    jours7.push({ date: ds, label: d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }), total });
+  }
+
+  return { semaine: totaux(semaine), mois: totaux(mois), jours7, moisNom: now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }), lunStr, dimStr };
 }
 
 function render() {
@@ -423,6 +477,54 @@ function render() {
       ${coursesJour.length === 0
         ? `<div class="empty">Aucune course pour cette date.</div>`
         : coursesJour.map(renderCourseCard).join("")}
+    `;
+  }
+
+  else if (vue === "stats") {
+    const s = statsData();
+    const maxVal = Math.max(...s.jours7.map(j => j.total), 1);
+    html = `
+      <div style="margin-bottom:20px">
+        <div class="section-title" style="margin-bottom:12px">Cette semaine</div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px;margin-bottom:10px">
+          <div style="font-size:28px;font-weight:800;color:#fbbf24">${formatEuro(s.semaine.total)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${s.lunStr.split("-").reverse().join("/")} → ${s.dimStr.split("-").reverse().join("/")}</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.semaine.especes)}</span>
+            <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.semaine.carte)}</span>
+            <span style="background:#818cf822;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">🌙 ${formatEuro(s.semaine.nuit)}</span>
+            <span style="background:#86efac22;color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">☀️ ${formatEuro(s.semaine.jour)}</span>
+            <span style="background:#fbbf2422;color:#fbbf24;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.semaine.total)}</span>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-bottom:12px;margin-top:20px">Ce mois — ${s.moisNom}</div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px;margin-bottom:10px">
+          <div style="font-size:28px;font-weight:800;color:#a78bfa">${formatEuro(s.mois.total)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${s.moisNom}</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.mois.especes)}</span>
+            <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.mois.carte)}</span>
+            <span style="background:#818cf822;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">🌙 ${formatEuro(s.mois.nuit)}</span>
+            <span style="background:#86efac22;color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">☀️ ${formatEuro(s.mois.jour)}</span>
+            <span style="background:#a78bfa22;color:#a78bfa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.mois.total)}</span>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-bottom:12px;margin-top:20px">7 derniers jours</div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px">
+          ${s.jours7.map(j => `
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;color:#94a3b8;text-transform:capitalize">${j.label}</span>
+                <span style="font-size:12px;font-weight:700;color:#fbbf24">${formatEuro(j.total)}</span>
+              </div>
+              <div style="background:#0f172a;border-radius:20px;height:8px;overflow:hidden">
+                <div style="background:${j.total > 0 ? "linear-gradient(90deg,#fbbf24,#f59e0b)" : "#1e293b"};height:100%;width:${Math.round((j.total/maxVal)*100)}%;border-radius:20px;transition:width 0.3s"></div>
+              </div>
+            </div>`).join("")}
+        </div>
+      </div>
     `;
   }
 
