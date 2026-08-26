@@ -1,3 +1,4 @@
+cat > /mnt/user-data/outputs/patron.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,62 +8,95 @@
   <title>CaisseX — Vue Patron</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, 'Segoe UI', sans-serif; padding-top: env(safe-area-inset-top); }
-    #app { max-width: 520px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, 'Segoe UI', sans-serif; }
+    #app { max-width: 640px; margin: 0 auto; min-height: 100dvh; padding-bottom: 40px; }
 
-    header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
-    .logo { font-size: 26px; }
-    .app-name { font-size: 18px; font-weight: 800; color: #fbbf24; }
-    .app-sub { font-size: 11px; color: #64748b; }
-    .badge-patron { background: #7c3aed; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+    header {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      padding: 18px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #334155;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .app-name { font-size: 20px; font-weight: 900; color: #fbbf24; letter-spacing: -0.5px; }
+    .app-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .badge-patron { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
 
-    .sync-bar { background: #1e293b; padding: 8px 20px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
-    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; margin-right: 5px; }
+    .sync-bar { background: #0f172a; border-bottom: 1px solid #1e293b; padding: 8px 24px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    main { padding: 16px; }
-    .section-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    main { padding: 20px 24px; }
 
-    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-    .stat-card { background: #1e293b; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
-    .stat-icon { font-size: 20px; }
-    .stat-value { font-size: 18px; font-weight: 800; }
-    .stat-label { font-size: 10px; color: #64748b; font-weight: 600; }
+    /* NAV TABS */
+    .tabs { display: flex; gap: 6px; margin-bottom: 24px; background: #1e293b; padding: 5px; border-radius: 14px; }
+    .tab { flex: 1; padding: 10px 6px; background: transparent; border: none; border-radius: 10px; color: #64748b; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; }
+    .tab.active { background: #fbbf24; color: #0f172a; }
 
-    .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 20px; }
-    .date-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 6px 10px; font-size: 13px; }
+    /* STAT CARDS */
+    .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+    .stat-card { background: #1e293b; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 5px; }
+    .stat-icon { font-size: 22px; }
+    .stat-value { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+    .stat-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .course-card { background: #1e293b; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .course-left { flex: 1; }
-    .course-heure { font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
-    .course-route { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
-    .course-note { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .course-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .course-montant { font-size: 17px; font-weight: 800; color: #fbbf24; }
-    .course-paiement { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
-    .app-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    /* SECTION */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 8px; }
+    .section-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* SHIFT BLOCK */
+    .shift-block { background: #1e293b; border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+    .shift-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; cursor: pointer; }
+    .shift-date { font-size: 15px; font-weight: 800; color: #e2e8f0; }
+    .shift-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .shift-total { font-size: 20px; font-weight: 900; color: #fbbf24; }
+    .shift-badges { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid #0f172a; }
+    .shift-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .shift-courses { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* COURSE ROW */
+    .course-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 12px; background: #0f172a; border-radius: 10px; gap: 10px; }
+    .course-row-left { flex: 1; }
+    .course-time { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+    .course-route { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .course-note { font-size: 11px; color: #475569; margin-top: 2px; }
+    .course-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .course-amount { font-size: 16px; font-weight: 900; color: #fbbf24; }
+    .pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+
+    /* APP STATS */
+    .app-card { background: #1e293b; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+    .app-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .app-name-label { font-size: 15px; font-weight: 800; }
+    .app-total { font-size: 20px; font-weight: 900; }
+    .app-bar-bg { background: #0f172a; border-radius: 20px; height: 8px; overflow: hidden; margin-bottom: 10px; }
+    .app-bar-fill { height: 100%; border-radius: 20px; }
+    .app-detail-row { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; }
+
+    /* DATE NAV */
+    .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .date-nav button { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
+    .date-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 7px 10px; font-size: 13px; flex: 1; }
 
     .empty { color: #475569; text-align: center; padding: 40px 20px; font-size: 14px; line-height: 1.8; }
     .loading { color: #64748b; text-align: center; padding: 60px 20px; font-size: 14px; }
 
-    .recap-box { background: #0f172a; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
-    .recap-item { display: flex; justify-content: space-between; font-size: 14px; color: #94a3b8; }
-
-    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-    .tab { flex: 1; padding: 9px 4px; background: #1e293b; border: 1px solid #334155; border-radius: 10px; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
-    .tab.active { background: #fbbf24; color: #0f172a; border-color: #fbbf24; }
-
-    .app-row-stat { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #1e293b; }
-    .app-row-stat:last-child { border-bottom: none; }
+    /* HISTORIQUE */
+    .histo-day { background: #1e293b; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .histo-day-left .histo-date { font-size: 14px; font-weight: 800; color: #e2e8f0; }
+    .histo-day-left .histo-nb { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .histo-day-right { font-size: 20px; font-weight: 900; color: #fbbf24; }
   </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div style="display:flex;align-items:center;gap:12px">
-      <span class="logo">🚕</span>
+    <div class="header-left">
+      <span style="font-size:28px">🚕</span>
       <div>
         <div class="app-name">CaisseX</div>
-        <div class="app-sub">Vue Patron</div>
+        <div class="app-sub">Tableau de bord patron</div>
       </div>
     </div>
     <span class="badge-patron">👁️ Lecture seule</span>
@@ -84,182 +118,312 @@ let courses = [];
 let tabActif = "jour";
 let dateFiltre = today();
 
+const APPS = [
+  { val:"compteur", label:"🚕 Compteur", color:"#fbbf24" },
+  { val:"bolt",     label:"⚡ Bolt",      color:"#34d399" },
+  { val:"heetch",   label:"🟣 Heetch",    color:"#f472b6" },
+  { val:"uber",     label:"⬛ Uber",      color:"#94a3b8" },
+  { val:"taxisvert",label:"🟢 Taxis Verts",color:"#4ade80" },
+];
+
 function today() {
   const now = new Date();
   if (now.getHours() < 8) {
-    const hier = new Date(now);
-    hier.setDate(now.getDate() - 1);
-    return `${hier.getFullYear()}-${String(hier.getMonth()+1).padStart(2,"0")}-${String(hier.getDate()).padStart(2,"0")}`;
+    const h = new Date(now); h.setDate(now.getDate()-1);
+    return ds(h);
   }
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  return ds(now);
 }
-
+function ds(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function dfr(s) {
+  const [y,m,d] = s.split("-");
+  return `${d}/${m}/${y}`;
+}
 function formatEuro(n) {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0);
+  return new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR"}).format(n||0);
 }
-
 function paiementColor(p) {
-  return p === "espèces" ? "#4ade80" : p === "carte" ? "#60a5fa" : "#facc15";
+  return p==="espèces"?"#4ade80":p==="carte"?"#60a5fa":"#facc15";
 }
-
-function appColor(a) {
-  return a === "bolt" ? "#34d399" : a === "heetch" ? "#f472b6" : a === "uber" ? "#94a3b8" : a === "taxisvert" ? "#4ade80" : "#fbbf24";
+function appInfo(a) {
+  return APPS.find(x=>x.val===a)||APPS[0];
 }
-function appLabel(a) {
-  return a === "bolt" ? "⚡ Bolt" : a === "heetch" ? "🟣 Heetch" : a === "uber" ? "⬛ Uber" : a === "taxisvert" ? "🟢 Taxis Verts" : "🚕 Compteur";
-}
-
 function totaux(liste) {
-  return liste.reduce((acc, c) => {
-    const m = parseFloat(c.montant) || 0;
-    acc.total += m; acc.nb++;
-    if (c.paiement === "espèces") acc.especes += m;
-    else if (c.paiement === "carte") acc.carte += m;
-    else acc.autre += m;
+  return liste.reduce((acc,c)=>{
+    const m=parseFloat(c.montant)||0;
+    acc.total+=m; acc.nb++;
+    if(c.paiement==="espèces") acc.especes+=m;
+    else if(c.paiement==="carte") acc.carte+=m;
+    else acc.autre+=m;
     return acc;
-  }, { total: 0, especes: 0, carte: 0, autre: 0, nb: 0 });
+  },{total:0,especes:0,carte:0,autre:0,nb:0});
 }
-
 function appTotaux(liste) {
-  const apps = ["compteur","bolt","heetch","uber","taxisvert"];
-  const res = {};
-  apps.forEach(a => res[a] = liste.filter(c => (c.appli||"compteur") === a).reduce((s,c) => s+(parseFloat(c.montant)||0), 0));
+  const res={};
+  APPS.forEach(a=>res[a.val]=liste.filter(c=>(c.appli||"compteur")===a.val).reduce((s,c)=>s+(parseFloat(c.montant)||0),0));
   return res;
 }
 
-function getMoisListe() {
-  const now = new Date();
-  const moisStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  return courses.filter(c => c.date.startsWith(moisStr));
+// Grouper les courses par journée de shift (19h → 8h)
+function getShiftDate(c) {
+  const h = parseInt((c.heure||"00").split(":")[0]);
+  if (h < 8) {
+    // appartient à la journée de la veille
+    const parts = c.date.split("-");
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    d.setDate(d.getDate()-1);
+    return ds(d);
+  }
+  return c.date;
 }
 
-function getSemaineListe() {
+function groupByShift(liste) {
+  const map = {};
+  liste.forEach(c => {
+    const sd = getShiftDate(c);
+    if (!map[sd]) map[sd] = [];
+    map[sd].push(c);
+  });
+  return map;
+}
+
+function getSemaine() {
   const now = new Date();
   const day = now.getDay();
-  const diffLun = (day === 0 ? -6 : 1 - day);
-  const lun = new Date(now); lun.setDate(now.getDate() + diffLun);
-  const dim = new Date(lun); dim.setDate(lun.getDate() + 6);
-  const lunStr = `${lun.getFullYear()}-${String(lun.getMonth()+1).padStart(2,"0")}-${String(lun.getDate()).padStart(2,"0")}`;
-  const dimStr = `${dim.getFullYear()}-${String(dim.getMonth()+1).padStart(2,"0")}-${String(dim.getDate()).padStart(2,"0")}`;
-  return courses.filter(c => c.date >= lunStr && c.date <= dimStr);
+  const diff = day===0?-6:1-day;
+  const lun = new Date(now); lun.setDate(now.getDate()+diff);
+  const dim = new Date(lun); dim.setDate(lun.getDate()+6);
+  return courses.filter(c=>c.date>=ds(lun)&&c.date<=ds(dim));
+}
+function getMois() {
+  const now = new Date();
+  const ms = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  return courses.filter(c=>c.date.startsWith(ms));
 }
 
 function render() {
-  const coursesJour = courses.filter(c => c.date === dateFiltre);
-  const coursesJourSorted = [...coursesJour].sort((a,b) => b.heure.localeCompare(a.heure));
-  const tJour = totaux(coursesJour);
-  const tSemaine = totaux(getSemaineListe());
-  const tMois = totaux(getMoisListe());
-  const appJour = appTotaux(coursesJour);
-  const apps = ["compteur","bolt","heetch","uber","taxisvert"];
+  const tJour = totaux(courses.filter(c=>c.date===dateFiltre));
+  const tSem  = totaux(getSemaine());
+  const tMois = totaux(getMois());
 
   let html = `
-    <!-- Stats globales -->
     <div class="cards-grid">
-      <div class="stat-card" style="border-top:3px solid #fbbf24"><div class="stat-icon">📅</div><div class="stat-value" style="color:#fbbf24">${formatEuro(tJour.total)}</div><div class="stat-label">Aujourd'hui</div></div>
-      <div class="stat-card" style="border-top:3px solid #60a5fa"><div class="stat-icon">📆</div><div class="stat-value" style="color:#60a5fa">${formatEuro(tSemaine.total)}</div><div class="stat-label">Cette semaine</div></div>
-      <div class="stat-card" style="border-top:3px solid #a78bfa"><div class="stat-icon">🗓️</div><div class="stat-value" style="color:#a78bfa">${formatEuro(tMois.total)}</div><div class="stat-label">Ce mois</div></div>
-      <div class="stat-card" style="border-top:3px solid #4ade80"><div class="stat-icon">🚗</div><div class="stat-value" style="color:#4ade80">${courses.length}</div><div class="stat-label">Total courses</div></div>
+      <div class="stat-card" style="border-top:3px solid #fbbf24">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" style="color:#fbbf24">${formatEuro(tJour.total)}</div>
+        <div class="stat-label">Aujourd'hui · ${tJour.nb} course${tJour.nb>1?"s":""}</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #60a5fa">
+        <div class="stat-icon">📆</div>
+        <div class="stat-value" style="color:#60a5fa">${formatEuro(tSem.total)}</div>
+        <div class="stat-label">Cette semaine · ${tSem.nb} courses</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #a78bfa">
+        <div class="stat-icon">🗓️</div>
+        <div class="stat-value" style="color:#a78bfa">${formatEuro(tMois.total)}</div>
+        <div class="stat-label">Ce mois · ${tMois.nb} courses</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #4ade80">
+        <div class="stat-icon">🚗</div>
+        <div class="stat-value" style="color:#4ade80">${courses.length}</div>
+        <div class="stat-label">Total courses</div>
+      </div>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <div class="tab ${tabActif==="jour"?"active":""}" onclick="tabActif='jour';render()">📅 Journée</div>
-      <div class="tab ${tabActif==="apps"?"active":""}" onclick="tabActif='apps';render()">📱 Par app</div>
-      <div class="tab ${tabActif==="toutes"?"active":""}" onclick="tabActif='toutes';render()">📋 Tout voir</div>
+      <div class="tab ${tabActif==="apps"?"active":""}" onclick="tabActif='apps';render()">📱 Apps</div>
+      <div class="tab ${tabActif==="histo"?"active":""}" onclick="tabActif='histo';render()">📋 Historique</div>
     </div>
   `;
 
   if (tabActif === "jour") {
+    const jourCourses = courses.filter(c => c.date === dateFiltre)
+      .sort((a,b) => a.heure.localeCompare(b.heure));
+    const t = totaux(jourCourses);
+    const at = appTotaux(jourCourses);
+    const maxApp = Math.max(...APPS.map(a=>at[a.val]),1);
+
     html += `
-      <div class="date-row">
-        <span class="section-title">Journée du</span>
+      <div class="date-nav">
+        <button onclick="prevDay()">‹</button>
         <input type="date" class="date-input" value="${dateFiltre}" onchange="dateFiltre=this.value;render()">
-      </div>
-      <div class="recap-box">
-        <div class="recap-item"><span>Total</span><strong style="color:#fbbf24">${formatEuro(tJour.total)}</strong></div>
-        <div class="recap-item"><span>Courses</span><strong>${tJour.nb}</strong></div>
-        <div class="recap-item"><span>💵 Espèces</span><strong style="color:#4ade80">${formatEuro(tJour.especes)}</strong></div>
-        <div class="recap-item"><span>💳 Carte</span><strong style="color:#60a5fa">${formatEuro(tJour.carte)}</strong></div>
-      </div>
-      ${coursesJourSorted.length === 0
-        ? `<div class="empty">Aucune course pour cette journée.</div>`
-        : coursesJourSorted.map(c => renderCard(c)).join("")}
-    `;
+        <button onclick="nextDay()">›</button>
+      </div>`;
+
+    if (jourCourses.length === 0) {
+      html += `<div class="empty">Aucune course pour ce shift.</div>`;
+    } else {
+      // Shift block
+      html += `<div class="shift-block">
+        <div class="shift-header">
+          <div>
+            <div class="shift-date">Shift du ${dfr(dateFiltre)}</div>
+            <div class="shift-sub">${t.nb} course${t.nb>1?"s":""} · 19h00 → 08h00</div>
+          </div>
+          <div class="shift-total">${formatEuro(t.total)}</div>
+        </div>
+        <div class="shift-badges">
+          <span class="shift-badge" style="background:#4ade8022;color:#4ade80">💵 Espèces ${formatEuro(t.especes)}</span>
+          <span class="shift-badge" style="background:#60a5fa22;color:#60a5fa">💳 Carte ${formatEuro(t.carte)}</span>
+          ${t.autre>0?`<span class="shift-badge" style="background:#facc1522;color:#facc15">Autre ${formatEuro(t.autre)}</span>`:""}
+        </div>
+        <div class="shift-courses">
+          ${jourCourses.map(c => {
+            const ai = appInfo(c.appli||"compteur");
+            const pc = paiementColor(c.paiement);
+            const route = c.depart||c.arrivee
+              ? (c.depart||"") + (c.depart&&c.arrivee?" → ":"") + (c.arrivee||"")
+              : "Trajet non renseigné";
+            return `<div class="course-row">
+              <div class="course-row-left">
+                <div class="course-time">
+                  <span>${c.heure}</span>
+                  <span class="pill" style="background:${ai.color}22;color:${ai.color}">${ai.label}</span>
+                </div>
+                <div class="course-route">${route}</div>
+                ${c.note?`<div class="course-note">📝 ${c.note}</div>`:""}
+              </div>
+              <div class="course-row-right">
+                <div class="course-amount">${parseFloat(c.montant).toFixed(2)} €</div>
+                <div class="pill" style="background:${pc}22;color:${pc}">${c.paiement}</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+
+      // Répartition apps du jour
+      html += `<div class="section-header" style="margin-top:16px"><span class="section-title">Répartition par app</span></div>`;
+      APPS.filter(a=>at[a.val]>0).forEach(a => {
+        const pct = Math.round((at[a.val]/t.total)*100);
+        html += `<div class="app-card">
+          <div class="app-card-header">
+            <span class="app-name-label" style="color:${a.color}">${a.label}</span>
+            <span class="app-total" style="color:${a.color}">${formatEuro(at[a.val])}</span>
+          </div>
+          <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
+          <div class="app-detail-row"><span>${pct}% du total</span><span>${jourCourses.filter(c=>(c.appli||"compteur")===a.val).length} course${jourCourses.filter(c=>(c.appli||"compteur")===a.val).length>1?"s":""}</span></div>
+        </div>`;
+      });
+    }
   }
 
   else if (tabActif === "apps") {
-    html += `
-      <div class="section-title">Répartition par application — aujourd'hui</div>
-      <div class="recap-box" style="margin-bottom:20px">
-        ${apps.map(a => appJour[a] > 0 ? `
-          <div class="app-row-stat">
-            <span style="color:${appColor(a)};font-weight:700">${appLabel(a)}</span>
-            <strong style="color:${appColor(a)}">${formatEuro(appJour[a])}</strong>
-          </div>` : "").join("") || '<span style="font-size:13px;color:#475569">Aucune course aujourd\'hui</span>'}
-      </div>
-      <div class="section-title">Répartition par application — ce mois</div>
-      <div class="recap-box">
-        ${apps.map(a => {
-          const v = appTotaux(getMoisListe())[a];
-          return v > 0 ? `
-            <div class="app-row-stat">
-              <span style="color:${appColor(a)};font-weight:700">${appLabel(a)}</span>
-              <strong style="color:${appColor(a)}">${formatEuro(v)}</strong>
-            </div>` : "";
-        }).join("") || '<span style="font-size:13px;color:#475569">Aucune course ce mois</span>'}
-      </div>
-    `;
+    const semCourses = getSemaine();
+    const moisCourses = getMois();
+    const atSem = appTotaux(semCourses);
+    const atMois = appTotaux(moisCourses);
+    const tSemT = totaux(semCourses).total || 1;
+    const tMoisT = totaux(moisCourses).total || 1;
+
+    html += `<div class="section-header"><span class="section-title">Cette semaine</span></div>`;
+    APPS.forEach(a => {
+      if (!atSem[a.val]) return;
+      const pct = Math.round((atSem[a.val]/tSemT)*100);
+      html += `<div class="app-card">
+        <div class="app-card-header">
+          <span class="app-name-label" style="color:${a.color}">${a.label}</span>
+          <span class="app-total" style="color:${a.color}">${formatEuro(atSem[a.val])}</span>
+        </div>
+        <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
+        <div class="app-detail-row"><span>${pct}% du total</span><span>${semCourses.filter(c=>(c.appli||"compteur")===a.val).length} courses</span></div>
+      </div>`;
+    });
+
+    html += `<div class="section-header" style="margin-top:8px"><span class="section-title">Ce mois</span></div>`;
+    APPS.forEach(a => {
+      if (!atMois[a.val]) return;
+      const pct = Math.round((atMois[a.val]/tMoisT)*100);
+      html += `<div class="app-card">
+        <div class="app-card-header">
+          <span class="app-name-label" style="color:${a.color}">${a.label}</span>
+          <span class="app-total" style="color:${a.color}">${formatEuro(atMois[a.val])}</span>
+        </div>
+        <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
+        <div class="app-detail-row"><span>${pct}% du total</span><span>${moisCourses.filter(c=>(c.appli||"compteur")===a.val).length} courses</span></div>
+      </div>`;
+    });
   }
 
-  else if (tabActif === "toutes") {
-    const triees = [...courses].sort((a,b) => b.date.localeCompare(a.date) || b.heure.localeCompare(a.heure));
-    html += `
-      <div class="section-title" style="margin-bottom:12px">${courses.length} courses au total</div>
-      ${triees.length === 0
-        ? `<div class="empty">Aucune course enregistrée.</div>`
-        : triees.map(c => renderCard(c)).join("")}
-    `;
+  else if (tabActif === "histo") {
+    // Grouper par date et trier
+    const byDate = {};
+    courses.forEach(c => {
+      if (!byDate[c.date]) byDate[c.date] = [];
+      byDate[c.date].push(c);
+    });
+    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+
+    if (dates.length === 0) {
+      html += `<div class="empty">Aucune course enregistrée.</div>`;
+    } else {
+      html += `<div class="section-header"><span class="section-title">${courses.length} courses · ${dates.length} jours</span></div>`;
+      dates.forEach(d => {
+        const liste = byDate[d].sort((a,b)=>a.heure.localeCompare(b.heure));
+        const t = totaux(liste);
+        const at = appTotaux(liste);
+        const appsActives = APPS.filter(a=>at[a.val]>0);
+        html += `
+          <div class="shift-block">
+            <div class="shift-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'flex':'none';this.nextElementSibling.nextElementSibling.style.display=this.nextElementSibling.nextElementSibling.style.display==='none'?'flex':'none'">
+              <div>
+                <div class="shift-date">${dfr(d)}</div>
+                <div class="shift-sub">${t.nb} course${t.nb>1?"s":""} · ${appsActives.map(a=>a.label).join(", ")}</div>
+              </div>
+              <div class="shift-total">${formatEuro(t.total)}</div>
+            </div>
+            <div class="shift-badges" style="display:none">
+              <span class="shift-badge" style="background:#4ade8022;color:#4ade80">💵 ${formatEuro(t.especes)}</span>
+              <span class="shift-badge" style="background:#60a5fa22;color:#60a5fa">💳 ${formatEuro(t.carte)}</span>
+              ${appsActives.map(a=>`<span class="shift-badge" style="background:${a.color}22;color:${a.color}">${a.label} ${formatEuro(at[a.val])}</span>`).join("")}
+            </div>
+            <div class="shift-courses" style="display:none">
+              ${liste.map(c => {
+                const ai = appInfo(c.appli||"compteur");
+                const pc = paiementColor(c.paiement);
+                const route = c.depart||c.arrivee?(c.depart||"")+(c.depart&&c.arrivee?" → ":"")+(c.arrivee||""):"Trajet non renseigné";
+                return `<div class="course-row">
+                  <div class="course-row-left">
+                    <div class="course-time">
+                      <span>${c.heure}</span>
+                      <span class="pill" style="background:${ai.color}22;color:${ai.color}">${ai.label}</span>
+                    </div>
+                    <div class="course-route">${route}</div>
+                    ${c.note?`<div class="course-note">📝 ${c.note}</div>`:""}
+                  </div>
+                  <div class="course-row-right">
+                    <div class="course-amount">${parseFloat(c.montant).toFixed(2)} €</div>
+                    <div class="pill" style="background:${pc}22;color:${pc}">${c.paiement}</div>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>
+          </div>`;
+      });
+    }
   }
 
   document.getElementById("main").innerHTML = html;
 }
 
-function renderCard(c) {
-  const route = c.depart || c.arrivee
-    ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
-    : "Trajet non renseigné";
-  const pc = paiementColor(c.paiement);
-  const ac = appColor(c.appli || "compteur");
-  const al = appLabel(c.appli || "compteur");
-  return `
-    <div class="course-card">
-      <div class="course-left">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-          <div class="course-heure">${c.date} · ${c.heure}</div>
-        </div>
-        <div class="course-route">${route}</div>
-        <div style="margin-top:4px"><span class="app-tag" style="background:${ac}22;color:${ac}">${al}</span></div>
-        ${c.note ? `<div class="course-note">${c.note}</div>` : ""}
-      </div>
-      <div class="course-right">
-        <div class="course-montant">${parseFloat(c.montant).toFixed(2)} €</div>
-        <div class="course-paiement" style="background:${pc}22;color:${pc}">${c.paiement}</div>
-      </div>
-    </div>`;
+function prevDay() {
+  const d = new Date(dateFiltre); d.setDate(d.getDate()-1); dateFiltre = ds(d); render();
+}
+function nextDay() {
+  const d = new Date(dateFiltre); d.setDate(d.getDate()+1); dateFiltre = ds(d); render();
 }
 
-// Chargement depuis Firebase
 async function load() {
   try {
     const res = await fetch(FIREBASE_URL + "/courses.json");
     const data = await res.json();
-    if (data && Array.isArray(data)) {
-      courses = data;
-    }
+    if (data && Array.isArray(data)) courses = data;
     document.getElementById("sync-status").textContent = "Synchronisé";
     document.getElementById("sync-dot").style.background = "#4ade80";
-    document.getElementById("sync-time").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("sync-time").textContent = "Màj " + new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
     render();
   } catch(e) {
     document.getElementById("sync-status").textContent = "Erreur de connexion";
@@ -269,8 +433,9 @@ async function load() {
 }
 
 load();
-// Rafraîchissement automatique toutes les 60 secondes
 setInterval(load, 60000);
 </script>
 </body>
 </html>
+HTMLEOF
+echo "OK"
