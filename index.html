@@ -125,6 +125,33 @@
     .week-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .week-nav button { background:#1e293b; border:1px solid #334155; color:#e2e8f0; border-radius:8px; padding:6px 14px; font-size:13px; cursor:pointer; }
 
+    /* CALENDRIER */
+    .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .cal-header button { background:#1e293b; border:1px solid #334155; color:#e2e8f0; border-radius:8px; padding:6px 14px; font-size:14px; cursor:pointer; }
+    .cal-month { font-size:16px; font-weight:800; color:#e2e8f0; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:20px; }
+    .cal-day-label { text-align:center; font-size:10px; font-weight:700; color:#475569; padding:4px 0; text-transform:uppercase; }
+    .cal-day { aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:default; position:relative; min-height:44px; }
+    .cal-day.empty { background:transparent; }
+    .cal-day.no-work { background:#1e293b; }
+    .cal-day.worked { background:#1e293b; border:2px solid #334155; cursor:pointer; }
+    .cal-day.worked.goal-ok { background:#14532d; border:2px solid #4ade80; }
+    .cal-day.worked.goal-partial { background:#422006; border:2px solid #f59e0b; }
+    .cal-day.today-marker { outline:2px solid #fbbf24; outline-offset:1px; }
+    .cal-day-num { font-size:14px; font-weight:800; }
+    .cal-day-dot { width:5px; height:5px; border-radius:50%; }
+    .cal-day.no-work .cal-day-num { color:#334155; }
+    .cal-day.worked .cal-day-num { color:#e2e8f0; }
+    .cal-day.goal-ok .cal-day-num { color:#4ade80; }
+    .cal-day.goal-partial .cal-day-num { color:#fbbf24; }
+    .cal-legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#64748b; }
+    .cal-legend-dot { width:10px; height:10px; border-radius:4px; }
+    .cal-detail { background:#1e293b; border-radius:14px; padding:16px; }
+    .cal-detail-title { font-size:14px; font-weight:800; color:#fbbf24; margin-bottom:12px; }
+    .objective-bar-bg { background:#0f172a; border-radius:20px; height:10px; overflow:hidden; margin:8px 0; }
+    .objective-bar-fill { height:100%; border-radius:20px; transition:width 0.4s; }
+
     /* INSTALL BANNER */
     .install-banner { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #93c5fd; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; }
     .install-banner-close { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; flex-shrink: 0; }
@@ -165,6 +192,10 @@
       <span class="nav-icon">📈</span>
       <span class="nav-label">Stats</span>
     </button>
+    <button class="nav-btn" onclick="setVue('calendrier')" id="nav-calendrier">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Calendrier</span>
+    </button>
   </nav>
 </div>
 
@@ -198,6 +229,9 @@ let confirmId = null;
 let editId = null;
 let semaineOffset = 0;
 let moisOffset = 0;
+let calOffset = 0;
+let calSelectedDay = null;
+const OBJECTIF = 250;
 
 try { courses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch {}
 
@@ -474,6 +508,128 @@ function statsData() {
   };
 }
 
+function renderCalendrier() {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
+  const year = target.getFullYear();
+  const month = target.getMonth();
+  const monthName = target.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  // Totaux par date
+  const totalParDate = {};
+  courses.forEach(c => {
+    totalParDate[c.date] = (totalParDate[c.date] || 0) + (parseFloat(c.montant) || 0);
+  });
+
+  // Premier jour du mois (lundi = 0)
+  const firstDay = new Date(year, month, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = today();
+
+  let calHtml = `
+    <div class="cal-header">
+      <button onclick="calOffset--;renderCalView()">‹</button>
+      <span class="cal-month">${monthName}</span>
+      <button onclick="if(calOffset<0){calOffset++;renderCalView()}" style="opacity:${calOffset<0?1:0.3}">›</button>
+    </div>
+    <div class="cal-grid">
+      ${["Lu","Ma","Me","Je","Ve","Sa","Di"].map(d=>`<div class="cal-day-label">${d}</div>`).join("")}
+      ${Array(offset).fill('<div class="cal-day empty"></div>').join("")}
+  `;
+
+  let moisTotal = 0;
+  let joursTravailes = 0;
+  let joursObjectif = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const total = totalParDate[dateStr] || 0;
+    const isToday = dateStr === todayStr;
+    const worked = total > 0;
+    if (worked) { moisTotal += total; joursTravailes++; }
+    if (total >= OBJECTIF) joursObjectif++;
+
+    let cls = worked ? (total >= OBJECTIF ? "worked goal-ok" : "worked goal-partial") : "no-work";
+    if (isToday) cls += " today-marker";
+
+    const dotColor = total >= OBJECTIF ? "#4ade80" : total > 0 ? "#f59e0b" : "transparent";
+    const onclick = worked ? `onclick="calSelectedDay='${dateStr}';renderCalView()"` : "";
+
+    calHtml += `<div class="cal-day ${cls}" ${onclick} title="${worked ? formatEuro(total) : ''}">
+      <span class="cal-day-num">${d}</span>
+      ${worked ? `<span style="font-size:8px;font-weight:700;color:${dotColor};line-height:1">${Math.round(total)}€</span>` : ""}
+    </div>`;
+  }
+
+  calHtml += `</div>`;
+
+  // Légende
+  calHtml += `
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#14532d;border:2px solid #4ade80"></div> Objectif atteint (≥${OBJECTIF}€)</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#422006;border:2px solid #f59e0b"></div> En dessous</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#1e293b"></div> Repos</div>
+    </div>`;
+
+  // Résumé du mois
+  calHtml += `
+    <div class="cal-detail" style="margin-bottom:16px">
+      <div class="cal-detail-title">📊 Résumé — ${monthName}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Total du mois</span><strong style="color:#fbbf24">${formatEuro(moisTotal)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Jours travaillés</span><strong style="color:#e2e8f0">${joursTravailes}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Objectif atteint</span><strong style="color:#4ade80">${joursObjectif} / ${joursTravailes} jours</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Moyenne/jour travaillé</span><strong style="color:#60a5fa">${joursTravailes > 0 ? formatEuro(moisTotal/joursTravailes) : "—"}</strong></div>
+      </div>
+    </div>`;
+
+  // Détail du jour sélectionné
+  if (calSelectedDay) {
+    const jourCourses = courses.filter(c => c.date === calSelectedDay).sort((a,b) => a.heure.localeCompare(b.heure));
+    const t = totalParDate[calSelectedDay] || 0;
+    const pct = Math.min(Math.round((t / OBJECTIF) * 100), 100);
+    const barColor = t >= OBJECTIF ? "#4ade80" : t >= OBJECTIF*0.5 ? "#f59e0b" : "#ef4444";
+
+    calHtml += `<div class="cal-detail">
+      <div class="cal-detail-title">📅 ${dfr(calSelectedDay)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;color:#64748b">Objectif ${OBJECTIF}€</span>
+        <span style="font-size:16px;font-weight:800;color:${barColor}">${formatEuro(t)}</span>
+      </div>
+      <div class="objective-bar-bg">
+        <div class="objective-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:12px;text-align:right">${pct}% de l'objectif</div>
+      ${jourCourses.map(c => {
+        const ai = {compteur:"🚕",bolt:"⚡",heetch:"🟣",uber:"⬛",taxisvert:"🟢"}[c.appli||"compteur"] || "🚕";
+        const route = c.depart||c.arrivee ? (c.depart||"")+(c.depart&&c.arrivee?" → ":"")+(c.arrivee||"") : "Trajet non renseigné";
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #334155">
+          <div>
+            <div style="font-size:12px;color:#64748b">${ai} ${c.heure}</div>
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">${route}</div>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#fbbf24">${parseFloat(c.montant).toFixed(2)} €</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+
+  return calHtml;
+}
+
+function renderCalView() {
+  if (vue === "calendrier") {
+    document.getElementById("main").innerHTML = renderCalendrier();
+  }
+}
+
+function dfr(s) {
+  if (!s) return "";
+  const [y,m,d] = s.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 function render() {
   const coursesJour = courses.filter(c => c.date === dateFiltre);
   const t = totaux(coursesJour);
@@ -502,6 +658,19 @@ function render() {
         <div class="stat-card" style="border-top:3px solid #60a5fa"><div class="stat-icon">🚗</div><div class="stat-value" style="color:#60a5fa">${coursesJour.length}</div><div class="stat-label">Courses</div></div>
         <div class="stat-card" style="border-top:3px solid #4ade80"><div class="stat-icon">💵</div><div class="stat-value" style="color:#4ade80">${formatEuro(t.especes)}</div><div class="stat-label">Espèces</div></div>
         <div class="stat-card" style="border-top:3px solid #a78bfa"><div class="stat-icon">💳</div><div class="stat-value" style="color:#a78bfa">${formatEuro(t.carte)}</div><div class="stat-label">Carte</div></div>
+      </div>
+      <div style="background:#1e293b;border-radius:14px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:700;color:#94a3b8">🎯 Objectif du shift</span>
+          <span style="font-size:13px;font-weight:800;color:${t.total >= OBJECTIF ? '#4ade80' : t.total >= OBJECTIF*0.5 ? '#f59e0b' : '#e2e8f0'}">${formatEuro(t.total)} / ${formatEuro(OBJECTIF)}</span>
+        </div>
+        <div style="background:#0f172a;border-radius:20px;height:12px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;width:${Math.min(Math.round((t.total/OBJECTIF)*100),100)}%;background:${t.total >= OBJECTIF ? 'linear-gradient(90deg,#4ade80,#22c55e)' : t.total >= OBJECTIF*0.5 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)'};border-radius:20px;transition:width 0.4s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#475569">
+          <span>${Math.min(Math.round((t.total/OBJECTIF)*100),100)}% atteint</span>
+          <span>${t.total >= OBJECTIF ? '✅ Objectif atteint !' : `Il manque ${formatEuro(OBJECTIF - t.total)}`}</span>
+        </div>
       </div>
       <div class="section-title" style="margin-bottom:12px">Courses aujourd'hui</div>
       ${coursesJour.length === 0
@@ -637,6 +806,10 @@ function render() {
         </div>
       </div>
     `;
+  }
+
+  else if (vue === "calendrier") {
+    html = renderCalendrier();
   }
 
   document.getElementById("main").innerHTML = html;
