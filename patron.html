@@ -1,441 +1,821 @@
-cat > /mnt/user-data/outputs/patron.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#fbbf24"/>
-  <title>CaisseX — Vue Patron</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fbbf24" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CaisseX" />
+  <title>CaisseX</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, 'Segoe UI', sans-serif; }
-    #app { max-width: 640px; margin: 0 auto; min-height: 100dvh; padding-bottom: 40px; }
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      overscroll-behavior: none;
+      padding-top: env(safe-area-inset-top);
+    }
+    #app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 
+    /* HEADER */
     header {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      padding: 18px 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid #334155;
-      position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
     }
     .header-left { display: flex; align-items: center; gap: 12px; }
-    .app-name { font-size: 20px; font-weight: 900; color: #fbbf24; letter-spacing: -0.5px; }
-    .app-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
-    .badge-patron { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+    .logo { font-size: 28px; }
+    .app-name { font-size: 18px; font-weight: 800; color: #fbbf24; }
+    .app-sub { font-size: 11px; color: #64748b; text-transform: capitalize; }
+    .total-badge { background: #fbbf24; color: #0f172a; font-weight: 800; font-size: 16px; padding: 7px 12px; border-radius: 12px; }
 
-    .sync-bar { background: #0f172a; border-bottom: 1px solid #1e293b; padding: 8px 24px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
-    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; margin-right: 6px; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    /* FLASH */
+    .flash { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #fff; text-align: center; flex-shrink: 0; }
 
-    main { padding: 20px 24px; }
+    /* MAIN */
+    main { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
 
-    /* NAV TABS */
-    .tabs { display: flex; gap: 6px; margin-bottom: 24px; background: #1e293b; padding: 5px; border-radius: 14px; }
-    .tab { flex: 1; padding: 10px 6px; background: transparent; border: none; border-radius: 10px; color: #64748b; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; }
-    .tab.active { background: #fbbf24; color: #0f172a; }
+    /* NAV BAS */
+    nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      display: flex; background: #0f172a; border-top: 1px solid #1e293b;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 10px 4px; background: transparent;
+      border: none; color: #475569; cursor: pointer; gap: 3px;
+    }
+    .nav-btn.active { color: #fbbf24; }
+    .nav-icon { font-size: 20px; }
+    .nav-label { font-size: 10px; font-weight: 600; }
+
+    /* SECTIONS */
+    .section-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .date-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 6px 10px; font-size: 13px; }
 
     /* STAT CARDS */
-    .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
-    .stat-card { background: #1e293b; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 5px; }
-    .stat-icon { font-size: 22px; }
-    .stat-value { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
-    .stat-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: #1e293b; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+    .stat-icon { font-size: 20px; }
+    .stat-value { font-size: 18px; font-weight: 800; }
+    .stat-label { font-size: 10px; color: #64748b; font-weight: 600; }
 
-    /* SECTION */
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 8px; }
-    .section-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-
-    /* SHIFT BLOCK */
-    .shift-block { background: #1e293b; border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
-    .shift-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; cursor: pointer; }
-    .shift-date { font-size: 15px; font-weight: 800; color: #e2e8f0; }
-    .shift-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .shift-total { font-size: 20px; font-weight: 900; color: #fbbf24; }
-    .shift-badges { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid #0f172a; }
-    .shift-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
-    .shift-courses { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
-
-    /* COURSE ROW */
-    .course-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 12px; background: #0f172a; border-radius: 10px; gap: 10px; }
-    .course-row-left { flex: 1; }
-    .course-time { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
-    .course-route { font-size: 13px; font-weight: 600; color: #e2e8f0; }
-    .course-note { font-size: 11px; color: #475569; margin-top: 2px; }
-    .course-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .course-amount { font-size: 16px; font-weight: 900; color: #fbbf24; }
-    .pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
-
-    /* APP STATS */
-    .app-card { background: #1e293b; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-    .app-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .app-name-label { font-size: 15px; font-weight: 800; }
-    .app-total { font-size: 20px; font-weight: 900; }
-    .app-bar-bg { background: #0f172a; border-radius: 20px; height: 8px; overflow: hidden; margin-bottom: 10px; }
-    .app-bar-fill { height: 100%; border-radius: 20px; }
-    .app-detail-row { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; }
-
-    /* DATE NAV */
-    .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-    .date-nav button { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
-    .date-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 7px 10px; font-size: 13px; flex: 1; }
-
+    /* COURSE CARD */
     .empty { color: #475569; text-align: center; padding: 40px 20px; font-size: 14px; line-height: 1.8; }
-    .loading { color: #64748b; text-align: center; padding: 60px 20px; font-size: 14px; }
+    .course-card { background: #1e293b; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .course-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .course-left { flex: 1; }
+    .course-heure { font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
+    .course-route { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+    .course-note { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .course-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .course-montant { font-size: 17px; font-weight: 800; color: #fbbf24; }
+    .course-paiement { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+    .delete-btn { background: transparent; border: none; color: #475569; cursor: pointer; font-size: 16px; padding: 2px; }
+    .confirm-row { display: flex; justify-content: space-between; align-items: center; background: rgba(127,29,29,0.2); border: 1px solid #991b1b; border-radius: 8px; padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+    .confirm-oui { background: #dc2626; color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .confirm-non { background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-    /* HISTORIQUE */
-    .histo-day { background: #1e293b; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .histo-day-left .histo-date { font-size: 14px; font-weight: 800; color: #e2e8f0; }
-    .histo-day-left .histo-nb { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .histo-day-right { font-size: 20px; font-weight: 900; color: #fbbf24; }
+    /* FORM */
+    .form-card { background: #1e293b; border-radius: 16px; padding: 20px; }
+    .form-title { font-size: 18px; font-weight: 800; color: #fbbf24; margin-bottom: 20px; }
+    .label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    input[type=text], input[type=time], input[type=number], input[type=date] {
+      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      color: #e2e8f0; padding: 12px; font-size: 16px; margin-bottom: 14px;
+      -webkit-appearance: none; outline: none;
+    }
+    .paiement-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .paiement-btn { flex: 1; padding: 12px 8px; border: none; border-radius: 10px; font-size: 13px; cursor: pointer; text-transform: capitalize; }
+    .submit-btn { width: 100%; background: #fbbf24; color: #0f172a; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
+    .cancel-btn { width: 100%; background: transparent; color: #64748b; border: 1px solid #334155; border-radius: 12px; padding: 14px; font-size: 14px; cursor: pointer; }
+
+    /* RECAP */
+    .recap-box { background: #0f172a; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .recap-item { display: flex; justify-content: space-between; font-size: 14px; color: #94a3b8; }
+
+    .edit-btn { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; padding: 2px; }
+    .edit-row { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .edit-row input { margin-bottom: 0 !important; }
+    .edit-paiement-row { display: flex; gap: 6px; }
+    .edit-paiement-btn { flex: 1; padding: 8px 4px; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; text-transform: capitalize; }
+    .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .edit-save { flex: 1; background: #fbbf24; color: #0f172a; border: none; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 800; cursor: pointer; }
+    .edit-cancel { flex: 1; background: transparent; color: #64748b; border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+
+    .app-btn { flex:1; padding:8px 4px; border:none; border-radius:10px; font-size:12px; cursor:pointer; font-weight:600; transition: opacity 0.15s; }
+    .app-btn.aselected { opacity:1; }
+    .app-btn:not(.aselected) { opacity:0.4; filter:grayscale(0.3); }
+    .app-row { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+    .app-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; }
+    .tag-bolt { background:#34d39922; color:#34d399; }
+    .tag-heetch { background:#f472b622; color:#f472b6; }
+    .tag-uber { background:#94a3b822; color:#94a3b8; }
+    .tag-taxisvert { background:#4ade8022; color:#4ade80; }
+    .tag-compteur { background:#fbbf2422; color:#fbbf24; }
+    .week-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .week-nav button { background:#1e293b; border:1px solid #334155; color:#e2e8f0; border-radius:8px; padding:6px 14px; font-size:13px; cursor:pointer; }
+
+    /* CALENDRIER */
+    .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .cal-header button { background:#1e293b; border:1px solid #334155; color:#e2e8f0; border-radius:8px; padding:6px 14px; font-size:14px; cursor:pointer; }
+    .cal-month { font-size:16px; font-weight:800; color:#e2e8f0; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:20px; }
+    .cal-day-label { text-align:center; font-size:10px; font-weight:700; color:#475569; padding:4px 0; text-transform:uppercase; }
+    .cal-day { aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:default; position:relative; min-height:44px; }
+    .cal-day.empty { background:transparent; }
+    .cal-day.no-work { background:#1e293b; }
+    .cal-day.worked { background:#1e293b; border:2px solid #334155; cursor:pointer; }
+    .cal-day.worked.goal-ok { background:#14532d; border:2px solid #4ade80; }
+    .cal-day.worked.goal-partial { background:#422006; border:2px solid #f59e0b; }
+    .cal-day.today-marker { outline:2px solid #fbbf24; outline-offset:1px; }
+    .cal-day-num { font-size:14px; font-weight:800; }
+    .cal-day-dot { width:5px; height:5px; border-radius:50%; }
+    .cal-day.no-work .cal-day-num { color:#334155; }
+    .cal-day.worked .cal-day-num { color:#e2e8f0; }
+    .cal-day.goal-ok .cal-day-num { color:#4ade80; }
+    .cal-day.goal-partial .cal-day-num { color:#fbbf24; }
+    .cal-legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#64748b; }
+    .cal-legend-dot { width:10px; height:10px; border-radius:4px; }
+    .cal-detail { background:#1e293b; border-radius:14px; padding:16px; }
+    .cal-detail-title { font-size:14px; font-weight:800; color:#fbbf24; margin-bottom:12px; }
+    .objective-bar-bg { background:#0f172a; border-radius:20px; height:10px; overflow:hidden; margin:8px 0; }
+    .objective-bar-fill { height:100%; border-radius:20px; transition:width 0.4s; }
+
+    /* INSTALL BANNER */
+    .install-banner { background: #1e3a5f; border: 1px solid #2563eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #93c5fd; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; }
+    .install-banner-close { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 16px; flex-shrink: 0; }
   </style>
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <div id="app">
   <header>
     <div class="header-left">
-      <span style="font-size:28px">🚕</span>
+      <span class="logo">🚕</span>
       <div>
         <div class="app-name">CaisseX</div>
-        <div class="app-sub">Tableau de bord patron</div>
+        <div class="app-sub" id="date-header"></div>
       </div>
     </div>
-    <span class="badge-patron">👁️ Lecture seule</span>
+    <div class="total-badge" id="total-header">0,00 €</div>
   </header>
 
-  <div class="sync-bar">
-    <span><span class="sync-dot" id="sync-dot"></span><span id="sync-status">Chargement...</span></span>
-    <span id="sync-time"></span>
-  </div>
+  <div class="flash" id="flash" style="display:none"></div>
 
-  <main id="main">
-    <div class="loading">⏳ Chargement des données...</div>
-  </main>
+  <main id="main"></main>
+
+  <nav>
+    <button class="nav-btn active" onclick="setVue('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Tableau</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('ajouter')" id="nav-ajouter">
+      <span class="nav-icon">➕</span>
+      <span class="nav-label">Ajouter</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('historique')" id="nav-historique">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Historique</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('stats')" id="nav-stats">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">Stats</span>
+    </button>
+    <button class="nav-btn" onclick="setVue('calendrier')" id="nav-calendrier">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Calendrier</span>
+    </button>
+  </nav>
 </div>
 
 <script>
 const FIREBASE_URL = "https://caissex-3d4cc-default-rtdb.europe-west1.firebasedatabase.app";
-let courses = [];
-let tabActif = "jour";
-let dateFiltre = today();
 
-const APPS = [
-  { val:"compteur", label:"🚕 Compteur", color:"#fbbf24" },
-  { val:"bolt",     label:"⚡ Bolt",      color:"#34d399" },
-  { val:"heetch",   label:"🟣 Heetch",    color:"#f472b6" },
-  { val:"uber",     label:"⬛ Uber",      color:"#94a3b8" },
-  { val:"taxisvert",label:"🟢 Taxis Verts",color:"#4ade80" },
-];
+async function syncToFirebase(courses) {
+  try {
+    await fetch(FIREBASE_URL + "/courses.json", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(courses)
+    });
+  } catch(e) { console.log("Sync error", e); }
+}
+
+async function loadFromFirebase() {
+  try {
+    const res = await fetch(FIREBASE_URL + "/courses.json");
+    const data = await res.json();
+    return data || [];
+  } catch(e) { return null; }
+}
+</script>
+<script>
+const STORAGE_KEY = "taxi_courses";
+let courses = [];
+let vue = "dashboard";
+let dateFiltre = today();
+let confirmId = null;
+let editId = null;
+let semaineOffset = 0;
+let moisOffset = 0;
+let calOffset = 0;
+let calSelectedDay = null;
+const OBJECTIF = 250;
+
+try { courses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch {}
+
+// Sync depuis Firebase au démarrage
+loadFromFirebase().then(data => {
+  if (data && Array.isArray(data) && data.length > 0) {
+    courses = data;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+    render();
+  }
+});
 
 function today() {
   const now = new Date();
+  // Si entre minuit et 8h, la journée de travail est celle de la veille (shift 19h-8h)
   if (now.getHours() < 8) {
-    const h = new Date(now); h.setDate(now.getDate()-1);
-    return ds(h);
+    const hier = new Date(now);
+    hier.setDate(now.getDate() - 1);
+    return `${hier.getFullYear()}-${String(hier.getMonth()+1).padStart(2,"0")}-${String(hier.getDate()).padStart(2,"0")}`;
   }
-  return ds(now);
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
 }
-function ds(d) {
+
+function formatEuro(n) {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0);
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+  syncToFirebase(courses);
+}
+
+function paiementColor(p) {
+  return p === "espèces" ? "#4ade80" : p === "carte" ? "#60a5fa" : "#facc15";
+}
+
+function totaux(liste) {
+  return liste.reduce((acc, c) => {
+    const m = parseFloat(c.montant) || 0;
+    acc.total += m;
+    if (c.paiement === "espèces") acc.especes += m;
+    else if (c.paiement === "carte") acc.carte += m;
+    else acc.autre += m;
+
+    return acc;
+  }, { total: 0, especes: 0, carte: 0, autre: 0 });
+}
+
+function flash(msg, type) {
+  const el = document.getElementById("flash");
+  el.textContent = msg;
+  el.style.display = "block";
+  el.style.background = type === "ok" ? "#166534" : "#7f1d1d";
+  setTimeout(() => { el.style.display = "none"; }, 2000);
+}
+
+function setVue(v) {
+  vue = v;
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("nav-" + v).classList.add("active");
+  render();
+}
+
+function supprimerCourse(id) {
+  courses = courses.filter(c => c.id !== id);
+  save();
+  confirmId = null;
+  render();
+}
+
+function toggleConfirm(id) {
+  confirmId = confirmId === id ? null : id;
+  render();
+}
+
+function toggleEdit(id) {
+  editId = editId === id ? null : id;
+  confirmId = null;
+  render();
+}
+
+function sauvegarderModif(id) {
+  const heure = document.getElementById("e-heure-" + id).value;
+  const montant = document.getElementById("e-montant-" + id).value;
+  if (!heure || !montant) { flash("Heure et montant obligatoires.", "err"); return; }
+  const paiement = document.querySelector(".edit-paiement-btn.eselected[data-id='" + id + "']")?.dataset.val || "espèces";
+  courses = courses.map(c => c.id === id ? {
+    ...c,
+    heure,
+    montant,
+    depart: document.getElementById("e-depart-" + id).value,
+    arrivee: document.getElementById("e-arrivee-" + id).value,
+    note: document.getElementById("e-note-" + id).value,
+    paiement,
+  } : c);
+  save();
+  editId = null;
+  flash("Course modifiée !", "ok");
+  render();
+}
+
+function selectEditPaiement(btn, id) {
+  document.querySelectorAll(".edit-paiement-btn[data-id='" + id + "']").forEach(b => {
+    b.classList.remove("eselected");
+    b.style.background = "#1e293b";
+    b.style.color = "#94a3b8";
+    b.style.fontWeight = "400";
+  });
+  btn.classList.add("eselected");
+  btn.style.background = paiementColor(btn.dataset.val);
+  btn.style.color = "#0f172a";
+  btn.style.fontWeight = "700";
+}
+
+function selectApp(btn) {
+  document.querySelectorAll(".app-btn").forEach(b => b.classList.remove("aselected"));
+  btn.classList.add("aselected");
+}
+
+function ajouterCourse() {
+  const heure = document.getElementById("f-heure").value;
+  const montant = document.getElementById("f-montant").value;
+  if (!heure || !montant) { flash("Heure et montant obligatoires.", "err"); return; }
+  const paiement = document.querySelector(".paiement-btn.selected")?.dataset.val || "espèces";
+  const appli = document.querySelector(".app-btn.aselected")?.dataset.val || "compteur";
+  const course = {
+    id: Date.now(),
+    date: today(),
+    heure,
+    depart: document.getElementById("f-depart").value,
+    arrivee: document.getElementById("f-arrivee").value,
+    montant,
+    paiement,
+    appli,
+    note: document.getElementById("f-note").value,
+  };
+  courses.unshift(course);
+  save();
+  flash("Course ajoutée !", "ok");
+  setVue("dashboard");
+}
+
+function selectPaiement(btn) {
+  document.querySelectorAll(".paiement-btn").forEach(b => {
+    b.classList.remove("selected");
+    b.style.background = "#0f172a";
+    b.style.color = "#94a3b8";
+    b.style.fontWeight = "400";
+  });
+  btn.classList.add("selected");
+  btn.style.background = paiementColor(btn.dataset.val);
+  btn.style.color = "#0f172a";
+  btn.style.fontWeight = "700";
+}
+
+function renderCourseCard(c) {
+  const route = c.depart || c.arrivee
+    ? (c.depart || "") + (c.depart && c.arrivee ? " → " : "") + (c.arrivee || "")
+    : "Trajet non renseigné";
+  const confirming = confirmId === c.id;
+  const editing = editId === c.id;
+  const pc = paiementColor(c.paiement);
+  return `
+    <div class="course-card">
+      <div class="course-inner">
+        <div class="course-left">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div class="course-heure">${c.heure}</div>
+            ${c.appli ? `<span class="app-tag tag-${c.appli}">${c.appli === "compteur" ? "🚕 Compteur" : c.appli === "bolt" ? "⚡ Bolt" : c.appli === "heetch" ? "🟣 Heetch" : c.appli === "uber" ? "⬛ Uber" : "🟢 Taxis Verts"}</span>` : ""}
+            ${parseInt((c.heure||"0").split(":")[0]) >= 8 && parseInt((c.heure||"0").split(":")[0]) < 19 ? '<span style="font-size:10px;background:#0f172a;color:#475569;padding:2px 7px;border-radius:20px;border:1px solid #334155">hors shift</span>' : ""}
+          </div>
+
+          </div>
+          <div class="course-route">${route}</div>
+          ${c.note ? `<div class="course-note">${c.note}</div>` : ""}
+        </div>
+        <div class="course-right">
+          <div class="course-montant">${parseFloat(c.montant).toFixed(2)} €</div>
+          <div class="course-paiement" style="background:${pc}22;color:${pc}">${c.paiement}</div>
+          <div style="display:flex;gap:6px;margin-top:2px">
+            <button class="edit-btn" onclick="toggleEdit(${c.id})">✏️</button>
+            <button class="delete-btn" onclick="toggleConfirm(${c.id})">🗑️</button>
+          </div>
+        </div>
+      </div>
+      ${editing ? `
+        <div class="edit-row">
+          <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Modifier la course</div>
+          <input type="time" id="e-heure-${c.id}" value="${c.heure}">
+          <input type="text" id="e-depart-${c.id}" value="${c.depart || ""}" placeholder="Départ">
+          <input type="text" id="e-arrivee-${c.id}" value="${c.arrivee || ""}" placeholder="Arrivée">
+          <input type="number" id="e-montant-${c.id}" value="${c.montant}" step="0.10" min="0" inputmode="decimal" placeholder="Montant">
+          <div class="edit-paiement-row">
+            ${["espèces","carte","autre"].map(p => "<button class='edit-paiement-btn" + (p===c.paiement?" eselected":"") + "' data-val='" + p + "' data-id='" + c.id + "' onclick='selectEditPaiement(this," + c.id + ")' style='background:" + (p===c.paiement?paiementColor(p):"#1e293b") + ";color:" + (p===c.paiement?"#0f172a":"#94a3b8") + ";font-weight:" + (p===c.paiement?"700":"400") + "'>" + p + "</button>").join("")}
+          </div>
+          <input type="text" id="e-note-${c.id}" value="${c.note || ""}" placeholder="Note (optionnel)">
+          <div class="edit-actions">
+            <button class="edit-save" onclick="sauvegarderModif(${c.id})">💾 Sauvegarder</button>
+            <button class="edit-cancel" onclick="toggleEdit(${c.id})">Annuler</button>
+          </div>
+        </div>` : ""}
+      ${confirming ? `
+        <div class="confirm-row">
+          <span style="font-size:13px;color:#f87171">Supprimer cette course ?</span>
+          <div style="display:flex;gap:8px">
+            <button class="confirm-oui" onclick="supprimerCourse(${c.id})">Oui</button>
+            <button class="confirm-non" onclick="toggleConfirm(${c.id})">Annuler</button>
+          </div>
+        </div>` : ""}
+    </div>`;
+}
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function isStandalone() {
+  return window.navigator.standalone === true;
+}
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay(); // 0=dim
+  const diffLun = (day === 0 ? -6 : 1 - day);
+  const lun = new Date(now); lun.setDate(now.getDate() + diffLun); lun.setHours(0,0,0,0);
+  const dim = new Date(lun); dim.setDate(lun.getDate() + 6); dim.setHours(23,59,59,999);
+  return { lun, dim };
+}
+
+function dateToStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
-function dfr(s) {
-  const [y,m,d] = s.split("-");
-  return `${d}/${m}/${y}`;
-}
-function formatEuro(n) {
-  return new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR"}).format(n||0);
-}
-function paiementColor(p) {
-  return p==="espèces"?"#4ade80":p==="carte"?"#60a5fa":"#facc15";
-}
-function appInfo(a) {
-  return APPS.find(x=>x.val===a)||APPS[0];
-}
-function totaux(liste) {
-  return liste.reduce((acc,c)=>{
-    const m=parseFloat(c.montant)||0;
-    acc.total+=m; acc.nb++;
-    if(c.paiement==="espèces") acc.especes+=m;
-    else if(c.paiement==="carte") acc.carte+=m;
-    else acc.autre+=m;
-    return acc;
-  },{total:0,especes:0,carte:0,autre:0,nb:0});
-}
+
 function appTotaux(liste) {
-  const res={};
-  APPS.forEach(a=>res[a.val]=liste.filter(c=>(c.appli||"compteur")===a.val).reduce((s,c)=>s+(parseFloat(c.montant)||0),0));
+  const apps = ["compteur","bolt","heetch","uber","taxisvert"];
+  const res = {};
+  apps.forEach(a => res[a] = liste.filter(c => (c.appli||"compteur") === a).reduce((s,c) => s+(parseFloat(c.montant)||0), 0));
   return res;
 }
 
-// Grouper les courses par journée de shift (19h → 8h)
-function getShiftDate(c) {
-  const h = parseInt((c.heure||"00").split(":")[0]);
-  if (h < 8) {
-    // appartient à la journée de la veille
-    const parts = c.date.split("-");
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-    d.setDate(d.getDate()-1);
-    return ds(d);
+function statsData() {
+  const now = new Date();
+
+  // Semaine avec offset
+  const baseWeek = new Date(now);
+  baseWeek.setDate(now.getDate() + semaineOffset * 7);
+  const day = baseWeek.getDay();
+  const diffLun = (day === 0 ? -6 : 1 - day);
+  const lun = new Date(baseWeek); lun.setDate(baseWeek.getDate() + diffLun); lun.setHours(0,0,0,0);
+  const dim = new Date(lun); dim.setDate(lun.getDate() + 6); dim.setHours(23,59,59,999);
+  const lunStr = dateToStr(lun);
+  const dimStr = dateToStr(dim);
+  const semaineListe = courses.filter(c => c.date >= lunStr && c.date <= dimStr);
+
+  // Mois avec offset
+  const baseMois = new Date(now.getFullYear(), now.getMonth() + moisOffset, 1);
+  const moisStr = `${baseMois.getFullYear()}-${String(baseMois.getMonth()+1).padStart(2,"0")}`;
+  const moisListe = courses.filter(c => c.date.startsWith(moisStr));
+  const moisNom = baseMois.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  // 7 jours glissants
+  const jours7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(now.getDate() - i);
+    const ds = dateToStr(d);
+    const total = courses.filter(c => c.date === ds).reduce((a, c) => a + (parseFloat(c.montant)||0), 0);
+    jours7.push({ date: ds, label: d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }), total });
   }
-  return c.date;
+
+  return {
+    semaine: totaux(semaineListe), semaineApp: appTotaux(semaineListe),
+    mois: totaux(moisListe), moisApp: appTotaux(moisListe),
+    jours7, moisNom, lunStr, dimStr
+  };
 }
 
-function groupByShift(liste) {
-  const map = {};
-  liste.forEach(c => {
-    const sd = getShiftDate(c);
-    if (!map[sd]) map[sd] = [];
-    map[sd].push(c);
+function renderCalendrier() {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
+  const year = target.getFullYear();
+  const month = target.getMonth();
+  const monthName = target.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  // Totaux par date
+  const totalParDate = {};
+  courses.forEach(c => {
+    totalParDate[c.date] = (totalParDate[c.date] || 0) + (parseFloat(c.montant) || 0);
   });
-  return map;
+
+  // Premier jour du mois (lundi = 0)
+  const firstDay = new Date(year, month, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = today();
+
+  let calHtml = `
+    <div class="cal-header">
+      <button onclick="calOffset--;renderCalView()">‹</button>
+      <span class="cal-month">${monthName}</span>
+      <button onclick="if(calOffset<0){calOffset++;renderCalView()}" style="opacity:${calOffset<0?1:0.3}">›</button>
+    </div>
+    <div class="cal-grid">
+      ${["Lu","Ma","Me","Je","Ve","Sa","Di"].map(d=>`<div class="cal-day-label">${d}</div>`).join("")}
+      ${Array(offset).fill('<div class="cal-day empty"></div>').join("")}
+  `;
+
+  let moisTotal = 0;
+  let joursTravailes = 0;
+  let joursObjectif = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const total = totalParDate[dateStr] || 0;
+    const isToday = dateStr === todayStr;
+    const worked = total > 0;
+    if (worked) { moisTotal += total; joursTravailes++; }
+    if (total >= OBJECTIF) joursObjectif++;
+
+    let cls = worked ? (total >= OBJECTIF ? "worked goal-ok" : "worked goal-partial") : "no-work";
+    if (isToday) cls += " today-marker";
+
+    const dotColor = total >= OBJECTIF ? "#4ade80" : total > 0 ? "#f59e0b" : "transparent";
+    const onclick = worked ? `onclick="calSelectedDay='${dateStr}';renderCalView()"` : "";
+
+    calHtml += `<div class="cal-day ${cls}" ${onclick} title="${worked ? formatEuro(total) : ''}">
+      <span class="cal-day-num">${d}</span>
+      ${worked ? `<span style="font-size:8px;font-weight:700;color:${dotColor};line-height:1">${Math.round(total)}€</span>` : ""}
+    </div>`;
+  }
+
+  calHtml += `</div>`;
+
+  // Légende
+  calHtml += `
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#14532d;border:2px solid #4ade80"></div> Objectif atteint (≥${OBJECTIF}€)</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#422006;border:2px solid #f59e0b"></div> En dessous</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#1e293b"></div> Repos</div>
+    </div>`;
+
+  // Résumé du mois
+  calHtml += `
+    <div class="cal-detail" style="margin-bottom:16px">
+      <div class="cal-detail-title">📊 Résumé — ${monthName}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Total du mois</span><strong style="color:#fbbf24">${formatEuro(moisTotal)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Jours travaillés</span><strong style="color:#e2e8f0">${joursTravailes}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Objectif atteint</span><strong style="color:#4ade80">${joursObjectif} / ${joursTravailes} jours</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8"><span>Moyenne/jour travaillé</span><strong style="color:#60a5fa">${joursTravailes > 0 ? formatEuro(moisTotal/joursTravailes) : "—"}</strong></div>
+      </div>
+    </div>`;
+
+  // Détail du jour sélectionné
+  if (calSelectedDay) {
+    const jourCourses = courses.filter(c => c.date === calSelectedDay).sort((a,b) => a.heure.localeCompare(b.heure));
+    const t = totalParDate[calSelectedDay] || 0;
+    const pct = Math.min(Math.round((t / OBJECTIF) * 100), 100);
+    const barColor = t >= OBJECTIF ? "#4ade80" : t >= OBJECTIF*0.5 ? "#f59e0b" : "#ef4444";
+
+    calHtml += `<div class="cal-detail">
+      <div class="cal-detail-title">📅 ${dfr(calSelectedDay)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;color:#64748b">Objectif ${OBJECTIF}€</span>
+        <span style="font-size:16px;font-weight:800;color:${barColor}">${formatEuro(t)}</span>
+      </div>
+      <div class="objective-bar-bg">
+        <div class="objective-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:12px;text-align:right">${pct}% de l'objectif</div>
+      ${jourCourses.map(c => {
+        const ai = {compteur:"🚕",bolt:"⚡",heetch:"🟣",uber:"⬛",taxisvert:"🟢"}[c.appli||"compteur"] || "🚕";
+        const route = c.depart||c.arrivee ? (c.depart||"")+(c.depart&&c.arrivee?" → ":"")+(c.arrivee||"") : "Trajet non renseigné";
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #334155">
+          <div>
+            <div style="font-size:12px;color:#64748b">${ai} ${c.heure}</div>
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">${route}</div>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#fbbf24">${parseFloat(c.montant).toFixed(2)} €</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+
+  return calHtml;
 }
 
-function getSemaine() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day===0?-6:1-day;
-  const lun = new Date(now); lun.setDate(now.getDate()+diff);
-  const dim = new Date(lun); dim.setDate(lun.getDate()+6);
-  return courses.filter(c=>c.date>=ds(lun)&&c.date<=ds(dim));
+function renderCalView() {
+  if (vue === "calendrier") {
+    document.getElementById("main").innerHTML = renderCalendrier();
+  }
 }
-function getMois() {
-  const now = new Date();
-  const ms = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  return courses.filter(c=>c.date.startsWith(ms));
+
+function dfr(s) {
+  if (!s) return "";
+  const [y,m,d] = s.split("-");
+  return `${d}/${m}/${y}`;
 }
 
 function render() {
-  const tJour = totaux(courses.filter(c=>c.date===dateFiltre));
-  const tSem  = totaux(getSemaine());
-  const tMois = totaux(getMois());
+  const coursesJour = courses.filter(c => c.date === dateFiltre);
+  const t = totaux(coursesJour);
 
-  let html = `
-    <div class="cards-grid">
-      <div class="stat-card" style="border-top:3px solid #fbbf24">
-        <div class="stat-icon">📅</div>
-        <div class="stat-value" style="color:#fbbf24">${formatEuro(tJour.total)}</div>
-        <div class="stat-label">Aujourd'hui · ${tJour.nb} course${tJour.nb>1?"s":""}</div>
-      </div>
-      <div class="stat-card" style="border-top:3px solid #60a5fa">
-        <div class="stat-icon">📆</div>
-        <div class="stat-value" style="color:#60a5fa">${formatEuro(tSem.total)}</div>
-        <div class="stat-label">Cette semaine · ${tSem.nb} courses</div>
-      </div>
-      <div class="stat-card" style="border-top:3px solid #a78bfa">
-        <div class="stat-icon">🗓️</div>
-        <div class="stat-value" style="color:#a78bfa">${formatEuro(tMois.total)}</div>
-        <div class="stat-label">Ce mois · ${tMois.nb} courses</div>
-      </div>
-      <div class="stat-card" style="border-top:3px solid #4ade80">
-        <div class="stat-icon">🚗</div>
-        <div class="stat-value" style="color:#4ade80">${courses.length}</div>
-        <div class="stat-label">Total courses</div>
-      </div>
-    </div>
+  document.getElementById("total-header").textContent = formatEuro(t.total);
+  document.getElementById("date-header").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
-    <div class="tabs">
-      <div class="tab ${tabActif==="jour"?"active":""}" onclick="tabActif='jour';render()">📅 Journée</div>
-      <div class="tab ${tabActif==="apps"?"active":""}" onclick="tabActif='apps';render()">📱 Apps</div>
-      <div class="tab ${tabActif==="histo"?"active":""}" onclick="tabActif='histo';render()">📋 Historique</div>
-    </div>
-  `;
+  const installBanner = isIOS() && !isStandalone() && vue === "dashboard"
+    ? `<div class="install-banner">
+        <span>📲 <strong>Installer l'app :</strong> appuie sur le bouton Partager (↑) en bas de Safari, puis "Sur l'écran d'accueil".</span>
+        <button class="install-banner-close" onclick="this.parentElement.remove()">✕</button>
+      </div>`
+    : "";
 
-  if (tabActif === "jour") {
-    const jourCourses = courses.filter(c => c.date === dateFiltre)
-      .sort((a,b) => a.heure.localeCompare(b.heure));
-    const t = totaux(jourCourses);
-    const at = appTotaux(jourCourses);
-    const maxApp = Math.max(...APPS.map(a=>at[a.val]),1);
+  let html = "";
 
-    html += `
-      <div class="date-nav">
-        <button onclick="prevDay()">‹</button>
+  if (vue === "dashboard") {
+    html = `
+      ${installBanner}
+      <div class="date-row">
+        <span class="section-title">Journée du</span>
         <input type="date" class="date-input" value="${dateFiltre}" onchange="dateFiltre=this.value;render()">
-        <button onclick="nextDay()">›</button>
-      </div>`;
-
-    if (jourCourses.length === 0) {
-      html += `<div class="empty">Aucune course pour ce shift.</div>`;
-    } else {
-      // Shift block
-      html += `<div class="shift-block">
-        <div class="shift-header">
-          <div>
-            <div class="shift-date">Shift du ${dfr(dateFiltre)}</div>
-            <div class="shift-sub">${t.nb} course${t.nb>1?"s":""} · 19h00 → 08h00</div>
-          </div>
-          <div class="shift-total">${formatEuro(t.total)}</div>
+      </div>
+      <div class="cards-grid">
+        <div class="stat-card" style="border-top:3px solid #fbbf24"><div class="stat-icon">💰</div><div class="stat-value" style="color:#fbbf24">${formatEuro(t.total)}</div><div class="stat-label">Total du jour</div></div>
+        <div class="stat-card" style="border-top:3px solid #60a5fa"><div class="stat-icon">🚗</div><div class="stat-value" style="color:#60a5fa">${coursesJour.length}</div><div class="stat-label">Courses</div></div>
+        <div class="stat-card" style="border-top:3px solid #4ade80"><div class="stat-icon">💵</div><div class="stat-value" style="color:#4ade80">${formatEuro(t.especes)}</div><div class="stat-label">Espèces</div></div>
+        <div class="stat-card" style="border-top:3px solid #a78bfa"><div class="stat-icon">💳</div><div class="stat-value" style="color:#a78bfa">${formatEuro(t.carte)}</div><div class="stat-label">Carte</div></div>
+      </div>
+      <div style="background:#1e293b;border-radius:14px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:700;color:#94a3b8">🎯 Objectif du shift</span>
+          <span style="font-size:13px;font-weight:800;color:${t.total >= OBJECTIF ? '#4ade80' : t.total >= OBJECTIF*0.5 ? '#f59e0b' : '#e2e8f0'}">${formatEuro(t.total)} / ${formatEuro(OBJECTIF)}</span>
         </div>
-        <div class="shift-badges">
-          <span class="shift-badge" style="background:#4ade8022;color:#4ade80">💵 Espèces ${formatEuro(t.especes)}</span>
-          <span class="shift-badge" style="background:#60a5fa22;color:#60a5fa">💳 Carte ${formatEuro(t.carte)}</span>
-          ${t.autre>0?`<span class="shift-badge" style="background:#facc1522;color:#facc15">Autre ${formatEuro(t.autre)}</span>`:""}
+        <div style="background:#0f172a;border-radius:20px;height:12px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;width:${Math.min(Math.round((t.total/OBJECTIF)*100),100)}%;background:${t.total >= OBJECTIF ? 'linear-gradient(90deg,#4ade80,#22c55e)' : t.total >= OBJECTIF*0.5 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)'};border-radius:20px;transition:width 0.4s"></div>
         </div>
-        <div class="shift-courses">
-          ${jourCourses.map(c => {
-            const ai = appInfo(c.appli||"compteur");
-            const pc = paiementColor(c.paiement);
-            const route = c.depart||c.arrivee
-              ? (c.depart||"") + (c.depart&&c.arrivee?" → ":"") + (c.arrivee||"")
-              : "Trajet non renseigné";
-            return `<div class="course-row">
-              <div class="course-row-left">
-                <div class="course-time">
-                  <span>${c.heure}</span>
-                  <span class="pill" style="background:${ai.color}22;color:${ai.color}">${ai.label}</span>
-                </div>
-                <div class="course-route">${route}</div>
-                ${c.note?`<div class="course-note">📝 ${c.note}</div>`:""}
-              </div>
-              <div class="course-row-right">
-                <div class="course-amount">${parseFloat(c.montant).toFixed(2)} €</div>
-                <div class="pill" style="background:${pc}22;color:${pc}">${c.paiement}</div>
-              </div>
-            </div>`;
-          }).join("")}
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#475569">
+          <span>${Math.min(Math.round((t.total/OBJECTIF)*100),100)}% atteint</span>
+          <span>${t.total >= OBJECTIF ? '✅ Objectif atteint !' : `Il manque ${formatEuro(OBJECTIF - t.total)}`}</span>
         </div>
-      </div>`;
-
-      // Répartition apps du jour
-      html += `<div class="section-header" style="margin-top:16px"><span class="section-title">Répartition par app</span></div>`;
-      APPS.filter(a=>at[a.val]>0).forEach(a => {
-        const pct = Math.round((at[a.val]/t.total)*100);
-        html += `<div class="app-card">
-          <div class="app-card-header">
-            <span class="app-name-label" style="color:${a.color}">${a.label}</span>
-            <span class="app-total" style="color:${a.color}">${formatEuro(at[a.val])}</span>
-          </div>
-          <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
-          <div class="app-detail-row"><span>${pct}% du total</span><span>${jourCourses.filter(c=>(c.appli||"compteur")===a.val).length} course${jourCourses.filter(c=>(c.appli||"compteur")===a.val).length>1?"s":""}</span></div>
-        </div>`;
-      });
-    }
+      </div>
+      <div class="section-title" style="margin-bottom:12px">Courses aujourd'hui</div>
+      ${coursesJour.length === 0
+        ? `<div class="empty">Aucune course pour cette journée.<br>Appuie sur ➕ pour en ajouter une.</div>`
+        : coursesJour.map(renderCourseCard).join("")}
+    `;
   }
 
-  else if (tabActif === "apps") {
-    const semCourses = getSemaine();
-    const moisCourses = getMois();
-    const atSem = appTotaux(semCourses);
-    const atMois = appTotaux(moisCourses);
-    const tSemT = totaux(semCourses).total || 1;
-    const tMoisT = totaux(moisCourses).total || 1;
-
-    html += `<div class="section-header"><span class="section-title">Cette semaine</span></div>`;
-    APPS.forEach(a => {
-      if (!atSem[a.val]) return;
-      const pct = Math.round((atSem[a.val]/tSemT)*100);
-      html += `<div class="app-card">
-        <div class="app-card-header">
-          <span class="app-name-label" style="color:${a.color}">${a.label}</span>
-          <span class="app-total" style="color:${a.color}">${formatEuro(atSem[a.val])}</span>
+  else if (vue === "ajouter") {
+    html = `
+      <div class="form-card">
+        <div class="form-title">Nouvelle course</div>
+        <div class="label">Heure *</div>
+        <input type="time" id="f-heure">
+        <div class="label">Départ</div>
+        <input type="text" id="f-depart" placeholder="ex: Gare du Nord">
+        <div class="label">Arrivée</div>
+        <input type="text" id="f-arrivee" placeholder="ex: Aéroport CDG">
+        <div class="label">Montant (€) *</div>
+        <input type="number" id="f-montant" placeholder="0.00" step="0.10" min="0" inputmode="decimal">
+        <div class="label">Paiement</div>
+        <div class="paiement-row">
+          <button class="paiement-btn selected" data-val="espèces" onclick="selectPaiement(this)" style="background:#4ade80;color:#0f172a;font-weight:700">espèces</button>
+          <button class="paiement-btn" data-val="carte" onclick="selectPaiement(this)" style="background:#0f172a;color:#94a3b8">carte</button>
+          <button class="paiement-btn" data-val="autre" onclick="selectPaiement(this)" style="background:#0f172a;color:#94a3b8">autre</button>
         </div>
-        <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
-        <div class="app-detail-row"><span>${pct}% du total</span><span>${semCourses.filter(c=>(c.appli||"compteur")===a.val).length} courses</span></div>
-      </div>`;
-    });
-
-    html += `<div class="section-header" style="margin-top:8px"><span class="section-title">Ce mois</span></div>`;
-    APPS.forEach(a => {
-      if (!atMois[a.val]) return;
-      const pct = Math.round((atMois[a.val]/tMoisT)*100);
-      html += `<div class="app-card">
-        <div class="app-card-header">
-          <span class="app-name-label" style="color:${a.color}">${a.label}</span>
-          <span class="app-total" style="color:${a.color}">${formatEuro(atMois[a.val])}</span>
+        <div class="label">Application</div>
+        <div class="app-row">
+          <button class="app-btn aselected" data-val="compteur" onclick="selectApp(this)" style="background:#fbbf2433;color:#fbbf24">🚕 Compteur</button>
+          <button class="app-btn" data-val="bolt" onclick="selectApp(this)" style="background:#34d39933;color:#34d399">⚡ Bolt</button>
+          <button class="app-btn" data-val="heetch" onclick="selectApp(this)" style="background:#f472b633;color:#f472b6">🟣 Heetch</button>
+          <button class="app-btn" data-val="uber" onclick="selectApp(this)" style="background:#94a3b833;color:#94a3b8">⬛ Uber</button>
+          <button class="app-btn" data-val="taxisvert" onclick="selectApp(this)" style="background:#4ade8033;color:#4ade80">🟢 Taxis Verts</button>
         </div>
-        <div class="app-bar-bg"><div class="app-bar-fill" style="width:${pct}%;background:${a.color}"></div></div>
-        <div class="app-detail-row"><span>${pct}% du total</span><span>${moisCourses.filter(c=>(c.appli||"compteur")===a.val).length} courses</span></div>
-      </div>`;
-    });
+        <div class="label">Note</div>
+        <input type="text" id="f-note" placeholder="Optionnel...">
+        <button class="submit-btn" onclick="ajouterCourse()">Enregistrer la course</button>
+        <button class="cancel-btn" onclick="setVue('dashboard')">Annuler</button>
+      </div>
+    `;
   }
 
-  else if (tabActif === "histo") {
-    // Grouper par date et trier
-    const byDate = {};
-    courses.forEach(c => {
-      if (!byDate[c.date]) byDate[c.date] = [];
-      byDate[c.date].push(c);
-    });
-    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  else if (vue === "historique") {
+    html = `
+      <div class="date-row">
+        <span class="section-title">Filtrer par date</span>
+        <input type="date" class="date-input" value="${dateFiltre}" onchange="dateFiltre=this.value;render()">
+      </div>
+      <div class="recap-box">
+        <div class="recap-item"><span>Total</span><strong>${formatEuro(t.total)}</strong></div>
+        <div class="recap-item"><span>Espèces</span><strong style="color:#4ade80">${formatEuro(t.especes)}</strong></div>
+        <div class="recap-item"><span>Carte</span><strong style="color:#60a5fa">${formatEuro(t.carte)}</strong></div>
+        <div class="recap-item"><span>Autre</span><strong style="color:#facc15">${formatEuro(t.autre)}</strong></div>
+      </div>
+      ${coursesJour.length === 0
+        ? `<div class="empty">Aucune course pour cette date.</div>`
+        : coursesJour.map(renderCourseCard).join("")}
+    `;
+  }
 
-    if (dates.length === 0) {
-      html += `<div class="empty">Aucune course enregistrée.</div>`;
-    } else {
-      html += `<div class="section-header"><span class="section-title">${courses.length} courses · ${dates.length} jours</span></div>`;
-      dates.forEach(d => {
-        const liste = byDate[d].sort((a,b)=>a.heure.localeCompare(b.heure));
-        const t = totaux(liste);
-        const at = appTotaux(liste);
-        const appsActives = APPS.filter(a=>at[a.val]>0);
-        html += `
-          <div class="shift-block">
-            <div class="shift-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'flex':'none';this.nextElementSibling.nextElementSibling.style.display=this.nextElementSibling.nextElementSibling.style.display==='none'?'flex':'none'">
-              <div>
-                <div class="shift-date">${dfr(d)}</div>
-                <div class="shift-sub">${t.nb} course${t.nb>1?"s":""} · ${appsActives.map(a=>a.label).join(", ")}</div>
+  else if (vue === "stats") {
+    const s = statsData();
+    const maxVal = Math.max(...s.jours7.map(j => j.total), 1);
+    const appList = [
+      {val:"compteur", label:"🚕 Compteur", color:"#fbbf24"},
+      {val:"bolt", label:"⚡ Bolt", color:"#34d399"},
+      {val:"heetch", label:"🟣 Heetch", color:"#f472b6"},
+      {val:"uber", label:"⬛ Uber", color:"#94a3b8"},
+      {val:"taxisvert", label:"🟢 Taxis Verts", color:"#4ade80"},
+    ];
+    html = `
+      <div style="margin-bottom:20px">
+
+        <!-- SEMAINE -->
+        <div class="week-nav">
+          <button onclick="semaineOffset--;render()">‹ Préc.</button>
+          <span class="section-title">${semaineOffset === 0 ? "Cette semaine" : semaineOffset === -1 ? "Semaine passée" : "Semaine " + semaineOffset}</span>
+          <button onclick="if(semaineOffset<0){semaineOffset++;render()}" style="opacity:${semaineOffset < 0 ? 1 : 0.3}">Suiv. ›</button>
+        </div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px;margin-bottom:10px">
+          <div style="font-size:28px;font-weight:800;color:#fbbf24">${formatEuro(s.semaine.total)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${s.lunStr.split("-").reverse().join("/")} → ${s.dimStr.split("-").reverse().join("/")}</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.semaine.especes)}</span>
+            <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.semaine.carte)}</span>
+            <span style="background:#fbbf2422;color:#fbbf24;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.semaine.total)}</span>
+          </div>
+          <div style="margin-top:12px;border-top:1px solid #334155;padding-top:10px;display:flex;flex-direction:column;gap:6px">
+            ${appList.filter(a => s.semaineApp[a.val] > 0).map(a => `
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#94a3b8">${a.label}</span>
+                <span style="font-size:13px;font-weight:700;color:${a.color}">${formatEuro(s.semaineApp[a.val])}</span>
+              </div>`).join("") || '<span style="font-size:12px;color:#475569">Aucune course</span>'}
+          </div>
+        </div>
+
+        <!-- MOIS -->
+        <div class="week-nav" style="margin-top:20px">
+          <button onclick="moisOffset--;render()">‹ Préc.</button>
+          <span class="section-title">${moisOffset === 0 ? "Ce mois" : s.moisNom}</span>
+          <button onclick="if(moisOffset<0){moisOffset++;render()}" style="opacity:${moisOffset < 0 ? 1 : 0.3}">Suiv. ›</button>
+        </div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px;margin-bottom:10px">
+          <div style="font-size:28px;font-weight:800;color:#a78bfa">${formatEuro(s.mois.total)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${s.moisNom}</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <span style="background:#4ade8022;color:#4ade80;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💵 ${formatEuro(s.mois.especes)}</span>
+            <span style="background:#60a5fa22;color:#60a5fa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💳 ${formatEuro(s.mois.carte)}</span>
+            <span style="background:#a78bfa22;color:#a78bfa;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">💰 Total ${formatEuro(s.mois.total)}</span>
+          </div>
+          <div style="margin-top:12px;border-top:1px solid #334155;padding-top:10px;display:flex;flex-direction:column;gap:6px">
+            ${appList.filter(a => s.moisApp[a.val] > 0).map(a => `
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#94a3b8">${a.label}</span>
+                <span style="font-size:13px;font-weight:700;color:${a.color}">${formatEuro(s.moisApp[a.val])}</span>
+              </div>`).join("") || '<span style="font-size:12px;color:#475569">Aucune course</span>'}
+          </div>
+        </div>
+
+        <!-- 7 JOURS -->
+        <div class="section-title" style="margin-bottom:12px;margin-top:20px">7 derniers jours</div>
+        <div style="background:#1e293b;border-radius:14px;padding:16px">
+          ${s.jours7.map(j => `
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;color:#94a3b8;text-transform:capitalize">${j.label}</span>
+                <span style="font-size:12px;font-weight:700;color:#fbbf24">${formatEuro(j.total)}</span>
               </div>
-              <div class="shift-total">${formatEuro(t.total)}</div>
-            </div>
-            <div class="shift-badges" style="display:none">
-              <span class="shift-badge" style="background:#4ade8022;color:#4ade80">💵 ${formatEuro(t.especes)}</span>
-              <span class="shift-badge" style="background:#60a5fa22;color:#60a5fa">💳 ${formatEuro(t.carte)}</span>
-              ${appsActives.map(a=>`<span class="shift-badge" style="background:${a.color}22;color:${a.color}">${a.label} ${formatEuro(at[a.val])}</span>`).join("")}
-            </div>
-            <div class="shift-courses" style="display:none">
-              ${liste.map(c => {
-                const ai = appInfo(c.appli||"compteur");
-                const pc = paiementColor(c.paiement);
-                const route = c.depart||c.arrivee?(c.depart||"")+(c.depart&&c.arrivee?" → ":"")+(c.arrivee||""):"Trajet non renseigné";
-                return `<div class="course-row">
-                  <div class="course-row-left">
-                    <div class="course-time">
-                      <span>${c.heure}</span>
-                      <span class="pill" style="background:${ai.color}22;color:${ai.color}">${ai.label}</span>
-                    </div>
-                    <div class="course-route">${route}</div>
-                    ${c.note?`<div class="course-note">📝 ${c.note}</div>`:""}
-                  </div>
-                  <div class="course-row-right">
-                    <div class="course-amount">${parseFloat(c.montant).toFixed(2)} €</div>
-                    <div class="pill" style="background:${pc}22;color:${pc}">${c.paiement}</div>
-                  </div>
-                </div>`;
-              }).join("")}
-            </div>
-          </div>`;
-      });
-    }
+              <div style="background:#0f172a;border-radius:20px;height:8px;overflow:hidden">
+                <div style="background:${j.total > 0 ? "linear-gradient(90deg,#fbbf24,#f59e0b)" : "#1e293b"};height:100%;width:${Math.round((j.total/maxVal)*100)}%;border-radius:20px;transition:width 0.3s"></div>
+              </div>
+            </div>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  else if (vue === "calendrier") {
+    html = renderCalendrier();
   }
 
   document.getElementById("main").innerHTML = html;
 }
 
-function prevDay() {
-  const d = new Date(dateFiltre); d.setDate(d.getDate()-1); dateFiltre = ds(d); render();
-}
-function nextDay() {
-  const d = new Date(dateFiltre); d.setDate(d.getDate()+1); dateFiltre = ds(d); render();
-}
-
-async function load() {
-  try {
-    const res = await fetch(FIREBASE_URL + "/courses.json");
-    const data = await res.json();
-    if (data && Array.isArray(data)) courses = data;
-    document.getElementById("sync-status").textContent = "Synchronisé";
-    document.getElementById("sync-dot").style.background = "#4ade80";
-    document.getElementById("sync-time").textContent = "Màj " + new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-    render();
-  } catch(e) {
-    document.getElementById("sync-status").textContent = "Erreur de connexion";
-    document.getElementById("sync-dot").style.background = "#f87171";
-    document.getElementById("main").innerHTML = `<div class="empty">❌ Impossible de charger les données.<br>Vérifiez votre connexion.</div>`;
-  }
-}
-
-load();
-setInterval(load, 60000);
+render();
 </script>
 </body>
 </html>
-HTMLEOF
-echo "OK"
